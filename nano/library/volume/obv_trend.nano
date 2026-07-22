@@ -1,0 +1,16 @@
+// On-balance-volume trend confirmation. OBV_SLOPE = linear-regression slope
+// of OBV over the lookback window, provided by the host data feed.
+// A positive slope confirms accumulation.
+strategy ObvTrend {
+
+    every 4h {
+
+        if OBV_SLOPE(20) > 0 {
+
+            buy(ETHUSD, 0.7)
+
+        }
+
+    }
+
+}

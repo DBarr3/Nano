@@ -1,0 +1,14 @@
+// Milestone-4 target: this source must compile to exactly momentum_ir.json.
+strategy Momentum {
+
+    every 5m {
+
+        if RSI(14) < 30 {
+
+            buy(BTC, 0.91)
+
+        }
+
+    }
+
+}

@@ -1,0 +1,16 @@
+// Bollinger squeeze breakout. BB_WIDTH = (upper - lower) / middle * 100
+// (band width percent); MOM = close - close[10] momentum. A tight squeeze
+// with positive momentum anticipates an upside expansion.
+strategy BbSqueezeBreakout {
+
+    every 1h {
+
+        if BB_WIDTH(20) < 4 and MOM(10) > 0 {
+
+            buy(BTCUSD, 0.7)
+
+        }
+
+    }
+
+}

@@ -1,0 +1,16 @@
+// Milestone-4 target: this source must compile to exactly mean_reversion_ir.json.
+// Fade the stretch: sell when price sits more than two standard deviations
+// above its 20-period mean.
+strategy MeanReversion {
+
+    every 1h {
+
+        if ZSCORE(20) > 2 {
+
+            sell(SPY, 0.8)
+
+        }
+
+    }
+
+}

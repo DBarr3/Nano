@@ -1,0 +1,15 @@
+// Milestone-4 target: this source must compile to exactly basic_rsi_ir.json.
+// Classic oversold entry: buy when the 14-period RSI dips below 30.
+strategy BasicRsi {
+
+    every 15m {
+
+        if RSI(14) < 30 {
+
+            buy(BTCUSD, 0.85)
+
+        }
+
+    }
+
+}

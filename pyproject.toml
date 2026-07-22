@@ -1,0 +1,23 @@
+[project]
+name = "aether-nano"
+version = "0.1.0"
+description = "Nano - deterministic intelligence execution graphs (IR + reference runtime)"
+requires-python = ">=3.10"
+
+# Zero mandatory dependencies -- stdlib only, matching the reference runtime.
+dependencies = []
+
+[project.optional-dependencies]
+# Signed, non-repudiable audit receipts over risk-gate decisions.
+# See nano/bridge/provenance.py and docs/internal-protocol-c-integration.md.
+provenance = ["aether-protocol-c"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["nano*"]

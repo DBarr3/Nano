@@ -1,0 +1,16 @@
+// ATR circuit breaker. ATR_PCT = ATR(14) / close * 100, provided by the
+// host data feed. When volatility exceeds 5 percent of price, stop
+// proposing entries until the regime calms down.
+strategy AtrVolatilityHalt {
+
+    every 5m {
+
+        if ATR_PCT(14) > 5 {
+
+            pause()
+
+        }
+
+    }
+
+}

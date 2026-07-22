@@ -1,0 +1,16 @@
+// Milestone-4 target: this source must compile to exactly volatility_guard_ir.json.
+// Circuit breaker: pause proposals while the 14-period ATR shows a
+// volatility spike.
+strategy VolatilityGuard {
+
+    every 5m {
+
+        if ATR(14) > 50 {
+
+            pause()
+
+        }
+
+    }
+
+}

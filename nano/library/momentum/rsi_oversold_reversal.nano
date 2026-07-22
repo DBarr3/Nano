@@ -1,0 +1,15 @@
+// Classic RSI oversold reversal (Pine: ta.rsi(close, 14) < 30).
+// Buy when the 14-period RSI dips below 30.
+strategy RsiOversoldReversal {
+
+    every 15m {
+
+        if RSI(14) < 30 {
+
+            buy(BTCUSD, 0.85)
+
+        }
+
+    }
+
+}

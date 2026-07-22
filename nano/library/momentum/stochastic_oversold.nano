@@ -1,0 +1,16 @@
+// Stochastic oversold entry (Pine: ta.stoch(close, high, low, 14) < 20).
+// STOCH_K = %K line of the 14-period stochastic oscillator, provided by
+// the host data feed.
+strategy StochasticOversold {
+
+    every 30m {
+
+        if STOCH_K(14) < 20 {
+
+            buy(ETHUSD, 0.8)
+
+        }
+
+    }
+
+}

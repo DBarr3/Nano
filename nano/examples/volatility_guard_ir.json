@@ -1,0 +1,11 @@
+{
+  "type": "Strategy",
+  "nanoIrVersion": "0.1.0",
+  "name": "VolatilityGuard",
+  "effects": ["intent.emit", "log.append"],
+  "nodes": [
+    { "type": "Schedule", "interval": "5m" },
+    { "type": "Condition", "signal": "ATR", "operator": ">", "value": 50 },
+    { "type": "Intent", "action": "PAUSE" }
+  ]
+}

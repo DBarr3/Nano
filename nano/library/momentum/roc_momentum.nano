@@ -1,0 +1,15 @@
+// Rate-of-change momentum (Pine: ta.roc(close, 10) > 5).
+// ROC = percent change of close over the lookback window.
+strategy RocMomentum {
+
+    every 1h {
+
+        if ROC(10) > 5 {
+
+            buy(BTCUSD, 0.7)
+
+        }
+
+    }
+
+}

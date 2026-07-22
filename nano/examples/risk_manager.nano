@@ -1,0 +1,18 @@
+// Milestone-4 target: this source must compile to exactly risk_manager_ir.json.
+// Hard stop: when portfolio drawdown reaches 3 percent, pause and hand
+// control to the named risk agent.
+strategy RiskManager {
+
+    agent RiskManager
+
+    every 1m {
+
+        if DRAWDOWN >= 3 {
+
+            pause()
+
+        }
+
+    }
+
+}

@@ -1,0 +1,17 @@
+// Max-drawdown circuit breaker: when portfolio drawdown reaches 5 percent,
+// pause all proposals and hand control to the named risk agent.
+strategy MaxDrawdownBreaker {
+
+    agent RiskDesk
+
+    every 1m {
+
+        if DRAWDOWN >= 5 {
+
+            pause()
+
+        }
+
+    }
+
+}

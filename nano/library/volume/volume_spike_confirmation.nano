@@ -1,0 +1,16 @@
+// Volume-confirmed capitulation buy. VOL_RATIO = volume / SMA(volume, 20),
+// provided by the host data feed. A 3x volume spike while RSI is oversold
+// marks a high-conviction reversal candidate.
+strategy VolumeSpikeConfirmation {
+
+    every 15m {
+
+        if VOL_RATIO(20) > 3 and RSI(14) < 30 {
+
+            buy(BTCUSD, 0.85)
+
+        }
+
+    }
+
+}

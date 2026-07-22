@@ -1,0 +1,16 @@
+// CCI oversold extreme. Pine's ta.cci goes deeply negative when oversold;
+// the feed provides the negated series: CCI_NEG = -CCI.
+// CCI_NEG >= 100 is the classic CCI < -100 oversold zone.
+strategy CciExtreme {
+
+    every 1h {
+
+        if CCI_NEG(20) >= 100 {
+
+            buy(QQQ, 0.65)
+
+        }
+
+    }
+
+}

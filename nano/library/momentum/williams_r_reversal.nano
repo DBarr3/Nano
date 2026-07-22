@@ -1,0 +1,16 @@
+// Williams %R reversal. Pine's ta.wpr ranges -100..0; Nano numbers are
+// non-negative, so the feed provides the shifted series:
+// WILLR_POS = Williams %R + 100 (range 0..100; < 20 means oversold).
+strategy WilliamsRReversal {
+
+    every 1h {
+
+        if WILLR_POS(14) < 20 {
+
+            buy(SOLUSD, 0.75)
+
+        }
+
+    }
+
+}

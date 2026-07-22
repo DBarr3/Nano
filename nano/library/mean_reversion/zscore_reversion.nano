@@ -1,0 +1,16 @@
+// Mean-reversion z-score entry. Nano numbers are non-negative, so the feed
+// provides the negated series: ZSCORE_NEG = -((close - sma) / stdev).
+// ZSCORE_NEG >= 2 means price is 2+ standard deviations BELOW the mean.
+strategy ZscoreReversion {
+
+    every 4h {
+
+        if ZSCORE_NEG(20) >= 2 {
+
+            buy(ETHUSD, 0.7)
+
+        }
+
+    }
+
+}

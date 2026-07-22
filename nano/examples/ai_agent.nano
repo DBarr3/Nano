@@ -1,0 +1,19 @@
+// Milestone-4 target: this source must compile to exactly ai_agent_ir.json.
+// Delegation: when the opportunity score is high enough, observe the market
+// and hand execution to a named downstream agent.
+strategy AiAgent {
+
+    agent ATS
+
+    every 1m {
+
+        if OPPORTUNITY >= 90 {
+
+            observe()
+            execute()
+
+        }
+
+    }
+
+}

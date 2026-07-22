@@ -1,0 +1,245 @@
+# Nano
+
+**A compiled execution architecture for autonomous engineering systems.**
+Compile AI reasoning into deterministic, auditable execution.
+
+Nano is a language and compilation framework for building agentic systems. Instead of
+repeatedly querying a model for every decision, an agent's behavior is **compiled** into
+reusable, replayable execution graphs — deterministic where the world is known, escalating
+back to reasoning where it isn't.
+
+```
+Nano is not a replacement for intelligence.
+Nano is the compiled memory of intelligence.
+```
+
+> **Status: Milestones 1–6 shipped · 173 tests passing.** Research preview — the IR, compiler,
+> reference interpreter, risk-gate bridge, editor services, and autonomous optimization loop are
+> implemented and tested. The CLI, `Series<T>` look-ahead typing, and real quantum-hardware
+> dispatch are still design/research. See [status](#status--whats-real) below.
+
+---
+
+## Start here
+
+New to Nano? Follow the path that fits you.
+
+| I want to… | Go to |
+|---|---|
+| **Understand the idea in 2 minutes** | [The problem & the approach](#the-problem) below |
+| **Read the argument in depth** | [The paper series](docs/papers/README.md) — one question per paper |
+| **Run something now** | [Quickstart](#quickstart) |
+| **See real strategies** | [`nano/examples/`](nano/examples/) · [`nano/library/`](nano/library/README.md) |
+| **Understand the guarantees** | [Design guarantees](#design-guarantees) |
+| **See how it's built** | [BUILD_ORDER.md](BUILD_ORDER.md) |
+| **Know what's real vs. roadmap** | [Status](#status--whats-real) |
+
+**Read the papers in order?** Start with these four — they carry the whole thesis:
+[Why Nano](docs/papers/01-why-nano.md) → [The Agentic Compiler](docs/papers/02-the-agentic-compiler.md)
+→ [Determinism](docs/papers/03-determinism.md) → [Provenance](docs/papers/04-provenance.md).
+
+---
+
+## The problem
+
+Current AI systems are inference-heavy. Every decision requires:
+
+```
+User input → LLM inference → response → repeat
+```
+
+High latency, high cost, limited autonomy, inconsistent execution — the model is the
+bottleneck on every single tick.
+
+## The approach
+
+Nano introduces a new layer between reasoning and execution:
+
+```
+Reasoning → Compilation → Execution
+```
+
+An AI system (or a human) reasons **once**, compiles the behavior into Nano, and executes it
+efficiently through deterministic runtimes. Novel or out-of-distribution situations route back
+to reasoning — everything repeatable becomes deterministic, auditable computation. The model is
+the author and the escalation path, never the per-tick decision bottleneck.
+
+Any system where an AI proposes actions and something must decide whether they run is a Nano
+target: autonomous agents, automation pipelines, monitoring and response workflows, robotics —
+anywhere an **Observe → Decide → Act → Record** loop exists. Quantitative trading is the
+**first workload, not the product**: deterministic inputs, replayable history, measurable
+outcomes.
+
+---
+
+## Architecture
+
+```
+        .nano source (human- or AI-authored)
+                      │
+                      ▼
+                  Compiler
+        (lexer → parser → type checks)
+                      │
+                      ▼
+                   Nano IR
+   (deterministic, serializable execution graph)
+                      │
+        ┌─────────────┼─────────────┐
+        ▼             ▼             ▼
+    Backtest        Paper         Live
+    (recorded      (simulated    (via your
+     frames)        gate)         risk gate)
+```
+
+Everything compiles to **Nano IR** — a hardware-independent, deterministic, serializable
+execution graph. The same program runs in local development, historical backtesting, and live
+execution because it *is* the same artifact:
+
+```
+Write Once. Optimize Everywhere. Execute Anywhere.
+```
+
+Every compiled workflow carries provenance and a fallback route. Known states execute
+deterministically; unknown states escalate back to reasoning.
+
+---
+
+## Example
+
+```nano
+strategy Momentum {
+
+  every 5m {
+
+    observe market
+
+    if RSI(14) < 30
+    and volume > average {
+
+      execute()
+    }
+  }
+}
+```
+
+This compiles to a deterministic execution graph: the scheduler owns the clock, the risk
+engine owns every order, and every decision is replayable bit-for-bit.
+
+## Quickstart
+
+```python
+from nano.compiler import compile_source
+from nano.runtime.interpreter import MarketFrame, execute
+from nano.bridge import NanoBridge
+
+graph = compile_source(open("strategy.nano").read())
+
+frame = MarketFrame(timestamps=(0,), signals={"RSI": [25.0]})
+
+# Direct interpretation — pure, deterministic
+result = execute(graph, frame)
+
+# Or bridge into your own risk engine (any object with a .dispose() method)
+bridge = NanoBridge(my_risk_engine)
+bridge.load(graph.to_dict())
+frame_result = bridge.run(frame)
+```
+
+See [`nano/examples/`](nano/examples/) for the conformance corpus (`basic_rsi`, `momentum`,
+`mean_reversion`, `volatility_guard`, `risk_manager`, `ai_agent`) — each exists as `.nano`
+source and hand-written IR JSON that must match bit-for-bit.
+
+---
+
+## The defining rule: agents propose, gates decide
+
+A Nano program **cannot act on the world directly**. There is no exchange API, no
+side-effecting call in the language — programs emit *intents*, and a pluggable gate disposes of
+each one (approve or reject, with a recorded reason). In trading that gate is a risk engine
+(implement the `RiskEngine` protocol in `nano/bridge/`); in any other agentic system it's
+whatever policy layer owns the consequences.
+
+Every action is therefore proposed, gated, logged, and replayable — which is what makes
+autonomy auditable. It also enables AI-in-the-loop improvement: an analysis system proposes
+evidence-backed patches, a human disposes, the compiler recompiles, and release gates govern
+deployment. **Nothing self-modifies silently.**
+
+For deployments that need proof a decision happened — not just a log line — an optional adapter
+(`nano/bridge/provenance.py`, `pip install aether-nano[provenance]`) wraps any gate so every
+disposition also produces a signed, independently re-verifiable receipt. Entirely outside the
+language.
+
+## Design guarantees
+
+| Guarantee | How |
+|---|---|
+| Deterministic replay | No ambient clock or RNG — time and entropy are injected, logged inputs |
+| Strategies can't bypass risk | No exchange API in the language; programs emit intents, the runtime disposes |
+| No look-ahead in backtests | `Series<T>` types make peeking at the future a compile error *(design)* |
+| Least-privilege execution | Every IR module carries an effect manifest — a capability boundary |
+| Reproducible builds | Content-addressed IR, pinned package hashes |
+| Gated self-improvement | AI-compiled workflows pass admission gates before any runtime loads them |
+
+Restrictions are the feature. Nano intentionally removes sockets, randomness, arbitrary IO,
+threads, and mutable globals — each one destroys replayability.
+
+---
+
+## The Nano family
+
+Three conceptual tiers over one compiler and one IR. A user starts with `buy when RSI < 30`
+and never has to leave the language as their agents grow.
+
+| Tier | Question it answers | State |
+|---|---|---|
+| **Nano** (this repo) | *What should the agent do?* — rules and intents | shipped |
+| **Nano+** | *How should it reason and coordinate?* — memory, confidence routing, multi-agent | roadmap |
+| **Nano++** | *How is complex computation optimized and secured?* — optimization, quantum research track | early |
+
+The Nano++ autonomous optimization loop ([`nano/loop/`](nano/loop/)) already ships a
+vendor-agnostic `QuantumRuntime` protocol with a deterministic `SimulatorRuntime` reference
+backend. Real-hardware dispatch remains research, not a promise.
+
+---
+
+## The paper series
+
+Seventeen short papers, each answering one question — **[docs/papers/](docs/papers/README.md)**.
+
+| Papers | Theme |
+|---|---|
+| [Why Nano](docs/papers/01-why-nano.md) · [The Agentic Compiler](docs/papers/02-the-agentic-compiler.md) · [Determinism](docs/papers/03-determinism.md) · [Provenance](docs/papers/04-provenance.md) | the core thesis |
+| [Why Not Go](docs/papers/05-why-not-go.md) · [Why Not TypeScript](docs/papers/06-why-not-typescript.md) · [Nano vs. Pine](docs/papers/07-nano-vs-pine.md) | positioning |
+| [LLM Integration](docs/papers/08-llm-integration.md) · [Autonomous Systems](docs/papers/09-autonomous-systems.md) · [The Nano Family](docs/papers/10-nano-family.md) | scope |
+| [Performance](docs/papers/11-performance.md) · [Security](docs/papers/12-security.md) · [Design Principles](docs/papers/13-design-principles.md) · [Future Work](docs/papers/14-future-work.md) | engineering |
+| [Closed-Loop Engineering](docs/papers/15-closed-loop-engineering.md) · [Quantum Computing](docs/papers/16-quantum-computing.md) · [Heterogeneous Compute](docs/papers/17-heterogeneous-compute.md) | the horizon |
+
+## Status — what's real
+
+| Shipped (tested) | Design / roadmap / research |
+|---|---|
+| Nano IR (`nano/ir/`) | CLI (`nano compile` / `replay` / `visualize`) |
+| Reference interpreter (`nano/runtime/`) | `Series<T>` look-ahead typing |
+| `.nano` → IR compiler (`nano/compiler/`) | Nano+ adaptive layer (memory, multi-agent) |
+| Risk-gate bridge + backtester (`nano/bridge/`) | Real quantum-hardware dispatch |
+| Editor services (`nano/aethercode/`) | Cognitive execution / confidence routing |
+| Pattern cache (`nano/memory/`) + optimization loop (`nano/loop/`) | |
+| Conformance corpus (`nano/examples/`) + strategy library (`nano/library/`) | |
+
+Every claim in the docs cites shipped code or is explicitly labeled design, roadmap, or
+research.
+
+## Documentation
+
+| Document | Contents |
+|---|---|
+| [Paper Series](docs/papers/README.md) | 17 papers — one question each |
+| [Build Order](BUILD_ORDER.md) | IR-first build sequence, the intent/gate lock, milestone status |
+| [Strategy Library](nano/library/README.md) | Pine-inspired quant strategy corpus + contribution guide |
+| [Optimization Loop](docs/nano-optimization-loop.md) | Nano++ autonomous optimization loop overview |
+
+---
+
+*Naming is under trademark review; the language codename and `.nano` extension are stable for
+development.*

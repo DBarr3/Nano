@@ -1,0 +1,16 @@
+// Golden cross as a spread signal. Nano cannot compute crosses in-language;
+// the feed provides SMA_SPREAD = SMA(50) - SMA(200). Positive spread means
+// the fast average is above the slow one (post-golden-cross regime).
+strategy GoldenCross {
+
+    every 1d {
+
+        if SMA_SPREAD(50) > 0 {
+
+            buy(SPY, 0.9)
+
+        }
+
+    }
+
+}

@@ -1,0 +1,15 @@
+// MACD histogram flip to positive (Pine: ta.macd histogram > 0).
+// MACD_HIST = MACD line - signal line, provided by the host data feed.
+strategy MacdHistogramFlip {
+
+    every 4h {
+
+        if MACD_HIST(9) > 0 {
+
+            buy(BTCUSD, 0.75)
+
+        }
+
+    }
+
+}

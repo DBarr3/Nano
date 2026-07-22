@@ -1,0 +1,16 @@
+// Donchian channel breakout. DONCHIAN_POS = (close - lower) / (upper - lower)
+// over the 20-period channel, provided by the host data feed.
+// A value at or above 1 means close broke the prior 20-period high.
+strategy DonchianBreakout {
+
+    every 1d {
+
+        if DONCHIAN_POS(20) >= 1 {
+
+            buy(ETHUSD, 0.8)
+
+        }
+
+    }
+
+}

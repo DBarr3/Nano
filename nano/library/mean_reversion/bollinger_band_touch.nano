@@ -1,0 +1,16 @@
+// Bollinger lower-band touch. BB_PCT_B = (close - lower) / (upper - lower),
+// Pine's ta.bb %B, provided by the host data feed. Below 0 = close under
+// the lower band.
+strategy BollingerBandTouch {
+
+    every 1h {
+
+        if BB_PCT_B(20) <= 0 {
+
+            buy(SPY, 0.8)
+
+        }
+
+    }
+
+}

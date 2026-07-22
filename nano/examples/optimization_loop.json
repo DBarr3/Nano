@@ -1,0 +1,17 @@
+{
+  "type": "Loop",
+  "nanoIrVersion": "0.1.0",
+  "name": "OptimizationLoop",
+  "effects": ["quantum.submit", "intent.emit", "sign.emit", "log.append"],
+  "nodes": [
+    { "id": "n1", "stage": "Observe", "inputs": [], "attrs": { "target": "workload" } },
+    { "id": "n2", "stage": "Optimize", "inputs": ["n1"], "attrs": { "kind": "quantum_seed", "circuit": "qaoa_40q" } },
+    { "id": "n3", "stage": "Evaluate", "inputs": ["n2"], "attrs": { "scorer": "classical" } },
+    { "id": "n4", "stage": "Verify", "inputs": ["n3"] },
+    { "id": "n5", "stage": "Gate", "inputs": ["n4"], "attrs": { "policy": "authorized_scope" } },
+    { "id": "n6", "stage": "Execute", "inputs": ["n5"] },
+    { "id": "n7", "stage": "Benchmark", "inputs": ["n6"], "attrs": { "metric": "score" } },
+    { "id": "n8", "stage": "Mutate", "inputs": ["n7"], "attrs": { "when": "score < threshold" } },
+    { "id": "n9", "stage": "Sign", "inputs": ["n8"] }
+  ]
+}

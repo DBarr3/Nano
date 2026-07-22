@@ -1,0 +1,154 @@
+"""Conformance + execution suite for the Nano strategy library.
+
+Mirrors tests/test_conformance.py but globs nano/library/** — every published
+library strategy is a `.nano`/`_ir.json` pair that must compile bit-identically
+and round-trip through StrategyGraph. Representative strategies also get
+execution tests against crafted MarketFrames asserting exact fire/no-fire
+behavior.
+"""
+
+import json
+from pathlib import Path
+
+import pytest
+
+from nano.compiler import compile_source, compile_to_dict
+from nano.ir.graph import StrategyGraph
+from nano.runtime.interpreter import MarketFrame, execute
+
+LIBRARY = Path(__file__).resolve().parent.parent / "nano" / "library"
+
+NANO_SOURCES = sorted(LIBRARY.glob("**/*.nano"))
+
+EXPECTED_CATEGORIES = {
+    "momentum",
+    "mean_reversion",
+    "trend",
+    "volatility",
+    "volume",
+    "risk",
+}
+
+
+def _ir_path(nano_path: Path) -> Path:
+    return nano_path.with_name(f"{nano_path.stem}_ir.json")
+
+
+def _id(path: Path) -> str:
+    return f"{path.parent.name}/{path.stem}"
+
+
+def test_library_is_nonempty_and_paired():
+    assert len(NANO_SOURCES) >= 12, "library must ship at least 12 strategies"
+    for nano_path in NANO_SOURCES:
+        assert _ir_path(nano_path).exists(), f"{nano_path.name} has no IR partner"
+    categories = {p.parent.name for p in NANO_SOURCES}
+    assert categories == EXPECTED_CATEGORIES
+
+
+def test_no_orphan_ir_files():
+    for ir_path in LIBRARY.glob("**/*_ir.json"):
+        partner = ir_path.with_name(ir_path.name[: -len("_ir.json")] + ".nano")
+        assert partner.exists(), f"{ir_path.name} has no .nano partner"
+
+
+@pytest.mark.parametrize("nano_path", NANO_SOURCES, ids=_id)
+def test_compiled_ir_matches_handwritten_ir(nano_path: Path):
+    compiled = compile_to_dict(nano_path.read_text())
+    handwritten = json.loads(_ir_path(nano_path).read_text())
+    assert compiled == handwritten
+
+
+@pytest.mark.parametrize("nano_path", NANO_SOURCES, ids=_id)
+def test_ir_round_trips(nano_path: Path):
+    data = json.loads(_ir_path(nano_path).read_text())
+    assert StrategyGraph.from_dict(data).to_dict() == data
+    assert data["effects"] == ["intent.emit", "log.append"]
+
+
+@pytest.mark.parametrize("nano_path", NANO_SOURCES, ids=_id)
+def test_compiled_graph_replays_identically(nano_path: Path):
+    graph = compile_source(nano_path.read_text())
+    signals = {c.signal: (0.0, 1e9) for c in graph.conditions}
+    frame = MarketFrame(timestamps=(0, 86400), signals=signals)
+    first = execute(graph, frame).to_dict()
+    second = execute(graph, frame).to_dict()
+    assert first == second
+
+
+# --------------------------------------------------------------------------
+# Execution tests: crafted MarketFrames with exact fire / no-fire assertions.
+# --------------------------------------------------------------------------
+
+
+def _load(rel: str) -> StrategyGraph:
+    return compile_source((LIBRARY / rel).read_text())
+
+
+def test_rsi_oversold_reversal_fires_only_when_oversold():
+    graph = _load("momentum/rsi_oversold_reversal.nano")
+    # 15m schedule over three 15-minute ticks: only the middle one is oversold.
+    frame = MarketFrame(
+        timestamps=(0, 900, 1800),
+        signals={"RSI": (55.0, 25.0, 30.0)},  # 30 is NOT < 30
+    )
+    result = execute(graph, frame)
+    assert len(result.intents) == 1
+    intent = result.intents[0]
+    assert intent.action == "BUY"
+    assert intent.asset == "BTCUSD"
+    assert intent.confidence == 0.85
+    assert intent.timestamp == 900
+
+
+def test_volume_spike_requires_both_conditions():
+    graph = _load("volume/volume_spike_confirmation.nano")
+    frame = MarketFrame(
+        timestamps=(0, 900, 1800, 2700),
+        signals={
+            # spike w/o oversold | oversold w/o spike | both | neither
+            "VOL_RATIO": (4.0, 1.0, 3.5, 2.0),
+            "RSI": (50.0, 25.0, 22.0, 45.0),
+        },
+    )
+    result = execute(graph, frame)
+    assert [i.timestamp for i in result.intents] == [1800]
+    assert result.intents[0].action == "BUY"
+
+
+def test_max_drawdown_breaker_pauses_and_names_agent():
+    graph = _load("risk/max_drawdown_breaker.nano")
+    assert [a.name for a in graph.agents] == ["RiskDesk"]
+    frame = MarketFrame(
+        timestamps=(0, 60, 120),
+        signals={"DRAWDOWN": (1.0, 5.0, 7.5)},  # >= 5 fires at 60 and 120
+    )
+    result = execute(graph, frame)
+    assert [(i.action, i.timestamp) for i in result.intents] == [
+        ("PAUSE", 60),
+        ("PAUSE", 120),
+    ]
+    assert result.intents[0].asset is None
+
+
+def test_golden_cross_ignores_negative_spread():
+    graph = _load("trend/golden_cross.nano")
+    frame = MarketFrame(
+        timestamps=(0, 86400, 172800),
+        signals={"SMA_SPREAD": (-12.5, 0.0, 8.0)},  # 0 is NOT > 0
+    )
+    result = execute(graph, frame)
+    assert len(result.intents) == 1
+    assert result.intents[0].action == "BUY"
+    assert result.intents[0].asset == "SPY"
+    assert result.intents[0].timestamp == 172800
+
+
+def test_atr_halt_emits_no_intent_in_calm_regime():
+    graph = _load("volatility/atr_volatility_halt.nano")
+    frame = MarketFrame(
+        timestamps=(0, 300, 600),
+        signals={"ATR_PCT": (1.2, 3.0, 5.0)},  # never > 5
+    )
+    result = execute(graph, frame)
+    assert result.intents == ()
