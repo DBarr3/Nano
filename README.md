@@ -15,8 +15,11 @@
 [![Python](https://img.shields.io/badge/python-3.10%2B-38bdf8.svg)](pyproject.toml)
 [![Tests](https://img.shields.io/badge/tests-173%20passing-22c55e.svg)](tests)
 [![Made by Aether AI](https://img.shields.io/badge/made%20by-Aether%20AI-0ea5e9.svg)](https://aethersystems.net)
+[![GitHub Repo stars](https://img.shields.io/github/stars/DBarr3/Nano?style=social)](https://github.com/DBarr3/Nano/stargazers)
 
 **[Website](https://aethersystems.net)** · **[Playground (Aether Code) →](https://app.aethersystems.net/code)** · **[Papers →](docs/papers/README.md)**
+
+<sub>⭐ **Star this repo** — it's the single biggest signal that helps other engineers find Nano.</sub>
 
 </div>
 
