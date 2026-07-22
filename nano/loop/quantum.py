@@ -1,12 +1,31 @@
 """Abstract quantum runtime interface (Nano++).
 
-Nano does not know IBM, IonQ, Azure, Rigetti, or D-Wave. Nano knows *quantum
-jobs*. A backend implements the QuantumRuntime protocol; the loop graph submits
-vendor-agnostic jobs and reads back a fidelity metric + distribution. Swapping
-hardware is swapping the runtime, never the loop.
+Nano++ introduces a vendor-neutral execution interface for specialized compute backends.
 
-SimulatorRuntime is the reference backend: fully deterministic (seeded by the
-job's content, no ambient RNG) so loop replays stay bit-identical.
+Nano does not know IBM Quantum, IonQ, Azure Quantum, Rigetti, or D-Wave.
+
+Nano knows **jobs**
+A backend implements the `QuantumRuntime` protocol. The optimization loop submits a portable execution request, receives a structured result, and continues without knowing whether the computation ran on:
+
+- a deterministic simulator
+- a noise model
+- a quantum processor
+- a future accelerator backend
+
+Changing hardware means changing the runtime — not rewriting the agent, compiler, or execution graph.
+
+The reference implementation is `SimulatorRuntime`.
+
+It is intentionally deterministic:
+- no ambient randomness
+- no external state
+- seed derived from job content
+- identical inputs produce identical outputs
+
+This allows Nano optimization loops to be replayed bit-for-bit during development, testing, and research.
+
+Real quantum hardware dispatch remains an experimental research direction.
+The stable abstraction is the runtime boundary.
 """
 
 from __future__ import annotations
