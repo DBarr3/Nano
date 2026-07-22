@@ -201,7 +201,7 @@ frame = MarketFrame(timestamps=(0,), signals={"RSI": [25.0]})
 # Direct interpretation — pure, deterministic
 result = execute(graph, frame)
 
-# Or bridge into your own risk engine (any object with a .dispose() method)
+# Or bridge into your own decision gate (any object with a .decide() method)
 bridge = NanoBridge(my_risk_engine)
 bridge.load(graph.to_dict())
 frame_result = bridge.run(frame)
