@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 220" width="720" height="220" role="img" aria-label="Nano by Aether AI">
+  <defs>
+    <linearGradient id="cyan" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#22d3ee"/>
+      <stop offset="1" stop-color="#38bdf8"/>
+    </linearGradient>
+    <linearGradient id="tile" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0d1420"/>
+      <stop offset="1" stop-color="#080b12"/>
+    </linearGradient>
+    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="6" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- self-contained tile: legible on any GitHub theme -->
+  <rect x="1" y="1" width="718" height="218" rx="28" fill="url(#tile)" stroke="#1b2635" stroke-width="1.5"/>
+
+  <!-- decision-graph mark: propose -> gate -> execute -->
+  <g transform="translate(112,110)" filter="url(#glow)">
+    <g stroke="url(#cyan)" stroke-width="7" stroke-linecap="round" fill="none" opacity="0.9">
+      <path d="M-42,34 L0,-40"/>
+      <path d="M42,34 L0,-40"/>
+      <path d="M-42,34 L42,34"/>
+    </g>
+    <circle cx="0"   cy="-40" r="15" fill="#22d3ee"/>
+    <circle cx="-42" cy="34"  r="15" fill="#0d1420" stroke="url(#cyan)" stroke-width="6"/>
+    <circle cx="42"  cy="34"  r="15" fill="#38bdf8"/>
+  </g>
+
+  <!-- wordmark -->
+  <g transform="translate(210,0)">
+    <text x="0" y="126" font-family="'Space Grotesk','Segoe UI',system-ui,sans-serif" font-size="86" font-weight="700" letter-spacing="-3" fill="#f4f8ff">nano</text>
+    <text x="4" y="162" font-family="'Inter',system-ui,sans-serif" font-size="17" font-weight="500" letter-spacing="4.5" fill="#5f7488">COMPILED&#160;&#160;EXECUTION&#160;&#160;LANGUAGE</text>
+    <g transform="translate(322,92)">
+      <path d="M0,14 L11,-14 L22,14 Z" fill="none" stroke="url(#cyan)" stroke-width="3" stroke-linejoin="round"/>
+      <text x="34" y="9" font-family="'Inter',system-ui,sans-serif" font-size="15" font-weight="600" letter-spacing="1.5" fill="#8aa0b4">by Aether AI</text>
+    </g>
+  </g>
+</svg>

@@ -1,8 +1,24 @@
-# Nano
-<img width="267" height="335" alt="image" src="https://github.com/user-attachments/assets/a86a670c-334f-485c-867c-79388daef1dd" />
+<div align="center">
 
-**A compiled execution architecture for autonomous engineering systems.**
-Compile AI reasoning into deterministic, auditable execution.
+<img src="assets/nano-logo.svg" alt="Nano — a compiled execution language, by Aether AI" width="560" />
+
+### A compiled execution architecture for autonomous engineering systems
+
+**Compile AI reasoning into deterministic, auditable execution.**
+
+[![CI](https://github.com/DBarr3/Nano/actions/workflows/ci.yml/badge.svg)](https://github.com/DBarr3/Nano/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-22d3ee.svg)](LICENSE)
+[![Python](https://img.shields.io/badge/python-3.10%2B-38bdf8.svg)](pyproject.toml)
+[![Tests](https://img.shields.io/badge/tests-173%20passing-22c55e.svg)](tests)
+[![Made by Aether AI](https://img.shields.io/badge/made%20by-Aether%20AI-0ea5e9.svg)](https://aethersystems.net)
+
+**[aethersystems.net](https://aethersystems.net)** · **[Run it in Aether Code →](https://app.aethersystems.net/code)** · **[Read the papers →](docs/papers/README.md)**
+
+`autonomous-ai` · `quantitative-trading` · `deterministic-execution` · `ai-agents` · `compiler`
+
+</div>
+
+---
 
 Nano is a language and compilation framework for building agentic systems. Instead of
 repeatedly querying a model for every decision, an agent's behavior is **compiled** into
@@ -129,6 +145,10 @@ engine owns every order, and every decision is replayable bit-for-bit.
 
 ## Quickstart
 
+> **Prefer the browser?** The Nano compiler runs live in **[Aether Code](https://app.aethersystems.net/code)** —
+> a VS Code–style web IDE with syntax highlighting, inline diagnostics, and an IR preview. Write a
+> `.nano` strategy, compile it, and replay it deterministically without installing anything.
+
 ```python
 from nano.compiler import compile_source
 from nano.runtime.interpreter import MarketFrame, execute
@@ -242,5 +262,16 @@ research.
 
 ---
 
-*Naming is under trademark review; the language codename and `.nano` extension are stable for
-development.*
+<div align="center">
+
+**Nano is part of the [Aether](https://aethersystems.net) ecosystem** — autonomous AI, quantitative
+trading, and cryptographic execution provenance. Built by **Aether AI LLC**.
+
+[Website](https://aethersystems.net) · [Aether Code (web IDE)](https://app.aethersystems.net/code) · [Papers](docs/papers/README.md) · [Strategy Library](nano/library/README.md)
+
+<sub>If Nano's ideas resonate, a ⭐ helps others find it.</sub>
+
+</div>
+
+<sub>*Naming is under trademark review; the language codename and `.nano` extension are stable for
+development.*</sub>

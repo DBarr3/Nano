@@ -26,5 +26,5 @@ Run from the repo root (`pip install -e .` first, or `PYTHONPATH=.`):
 python examples/provenance_signing_demo.py
 ```
 
-See [`docs/internal-protocol-c-integration.md`](../docs/internal-protocol-c-integration.md)
-for where a production deployment would actually wire this in.
+See [`nano/bridge/provenance.py`](../nano/bridge/provenance.py) and the
+[Provenance paper](../docs/papers/04-provenance.md) for how a production deployment wires this in.
