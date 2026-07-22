@@ -33,12 +33,12 @@ from nano.runtime.interpreter import MarketFrame, execute
 
 
 class BridgeError(Exception):
-    """The bridge was used out of order or a risk engine broke its contract."""
+    """The bridge was used out of order or a decision gate broke its contract."""
 
 
 @dataclass(frozen=True)
-class RiskDecision:
-    """A risk engine's disposition of a single Intent.
+class Decision:
+    """Result of evaluating a single Intent.
 
     ``approved=True`` does not execute anything — it is a record the caller's
     own gate discipline may act on.
@@ -56,7 +56,7 @@ class RiskDecision:
         }
 
 
-class RiskEngine(Protocol):
+class DecisionGate(Protocol):
     """Downstream gate: disposes of each Intent the bridge forwards.
 
     Implementations must be deterministic functions of (intent, frame) for
@@ -64,7 +64,7 @@ class RiskEngine(Protocol):
     that, but the backtester's ``verify_replay`` will expose violations.
     """
 
-    def dispose(self, intent: Intent, *, frame: MarketFrame) -> RiskDecision: ...
+    def decide(self, intent: Intent, *, frame: MarketFrame) -> Decision: ...
 
 
 @dataclass(frozen=True)
@@ -76,7 +76,7 @@ class BridgeResult:
     """
 
     intents: Tuple[Intent, ...]
-    decisions: Tuple[RiskDecision, ...]
+    decisions: Tuple[Decision, ...]
     log: Tuple[LogEntry, ...]
 
     def to_dict(self) -> dict:
@@ -88,10 +88,10 @@ class BridgeResult:
 
 
 class NanoBridge:
-    """Loads validated Nano IR and streams frames through interpreter + risk gate."""
+    """Connects compiled Nano programs to external decision systems."""
 
-    def __init__(self, risk_engine: RiskEngine) -> None:
-        self._risk_engine = risk_engine
+    def __init__(self, gate: DecisionGate) -> None:
+        self._gate = gate
         self._graph: StrategyGraph | None = None
 
     @property
@@ -118,39 +118,39 @@ class NanoBridge:
         return graph
 
     def run(self, frame: MarketFrame) -> BridgeResult:
-        """Execute the loaded graph over one frame; forward intents to the gate.
+        """Evaluate the loaded graph over one frame and forward intents.  Pure function of (loaded graph, frame, decision gate). Decisions are records, not actions. """
 
-        Pure function of (loaded graph, frame, risk engine). Nothing is
+        Pure function of (loaded graph, frame, decision gate). Nothing is
         executed here: decisions are records, not actions.
         """
         if self._graph is None:
-            raise BridgeError("No strategy loaded; call load() before run()")
+            raise BridgeError("No graph loaded; call load() before run()")
 
         execution = execute(self._graph, frame)
         log: list[LogEntry] = list(execution.log)
-        decisions: list[RiskDecision] = []
+        decisions: list[Decision] = []
 
         for intent in execution.intents:
             log.append(
                 LogEntry(
                     event="intent.forwarded",
                     timestamp=intent.timestamp,
-                    detail=f"{intent.action} asset={intent.asset} -> risk engine",
+                    detail=f"{intent.action} -> decision gate",
                 )
             )
-            decision = self._risk_engine.dispose(intent, frame=frame)
-            if not isinstance(decision, RiskDecision):
+            decision = self._gate.decide(intent, frame=frame)
+            if not isinstance(decision, Decision):
                 raise BridgeError(
-                    f"Risk engine returned {type(decision).__name__}, expected RiskDecision"
+                    f"decision gate returned {type(decision).__name__}, expected Decision"
                 )
             if decision.intent != intent:
                 raise BridgeError(
-                    "Risk engine returned a decision for a different intent than forwarded"
+                    "decision gate returned a decision for a different intent than forwarded"
                 )
             decisions.append(decision)
             log.append(
                 LogEntry(
-                    event="risk.approved" if decision.approved else "risk.rejected",
+                    event="gate.approved" if decision.approved else "gate.rejected",
                     timestamp=intent.timestamp,
                     detail=decision.reason,
                 )
