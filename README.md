@@ -2,7 +2,7 @@
 
 <img src="assets/nano-logo.svg" alt="Nano — a compiled execution language, by Aether AI" width="560" />
 
-### A compiled execution architecture for autonomous engineering systems
+### A compiled execution language for autonomous engineering systems
 
 **Compile AI reasoning into deterministic, auditable execution.**
 
