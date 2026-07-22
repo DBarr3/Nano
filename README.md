@@ -87,6 +87,32 @@ anywhere an **Observe → Decide → Act → Record** loop exists. Quantitative 
 **first workload, not the product**: deterministic inputs, replayable history, measurable
 outcomes.
 
+## Why Nano?
+
+Every existing way to run agent logic fails somewhere specific:
+
+| If you use… | You get… |
+|---|---|
+| Hand-written scripts | Fast, but unauditable — no provenance, no replay |
+| LLM-in-the-loop agents | Flexible, but slow, expensive, and non-deterministic on every tick |
+| Conversational frameworks (AutoGen, CrewAI) | State is chat history — rollback is impossible |
+| Graph frameworks (LangGraph) | Auditable state, heavy token overhead, hard multi-agent debugging |
+| Durable engines (Temporal) | Bulletproof execution, crushing ops burden, not LLM-native |
+| **Nano** | **Reason once, compile, replay forever — deterministic by construction** |
+
+| Capability | Nano | Typical agent frameworks |
+|---|---|---|
+| Deterministic, bit-identical replay | ✅ core guarantee | ❌ |
+| Serializable execution-graph IR | ✅ | ❌ |
+| LLM required on every decision | ❌ — only on escalation | usually |
+| Actions gated by a policy layer | ✅ enforced in the IR | limited / opt-in |
+| Signed provenance receipts | ✅ optional adapter | rare |
+| Backtest / live parity | ✅ same artifact | rare |
+| Dedicated server infrastructure | ❌ pure Python | varies |
+
+The full argument — the orchestration crisis, prompt compilation, the state-management
+landscape — is [Paper 01: Why Nano](docs/papers/01-why-nano.md).
+
 ---
 
 ## Architecture
@@ -251,6 +277,61 @@ Seventeen short papers, each answering one question — **[docs/papers/](docs/pa
 Every claim in the docs cites shipped code or is explicitly labeled design, roadmap, or
 research.
 
+## Roadmap
+
+```
+Shipped        →  IR · compiler · deterministic interpreter · risk-gate bridge
+                  backtester · pattern memory · editor services · optimization loop
+
+Next           →  CLI (nano compile / replay / visualize)
+                  Series<T> look-ahead typing (no-peek backtests as a compile error)
+
+Then           →  Nano+ adaptive layer — memory, confidence routing, multi-agent
+                  Real quantum-hardware dispatch (research)
+```
+
+Details and sequencing rationale: [BUILD_ORDER.md](BUILD_ORDER.md) ·
+[Paper 14: Future Work](docs/papers/14-future-work.md).
+
+## FAQ
+
+**Is Nano an LLM?**
+No. Nano is a compilation and execution layer. Models create reasoning; Nano compiles it into
+deterministic execution graphs and runs them.
+
+**Does Nano replace AI models?**
+No — it changes *when* they run. Models author behavior and handle novel situations; compiled
+graphs handle everything repeatable. Inference becomes the exception, not the default.
+
+**Can Nano run without an LLM?**
+Yes. Compiled programs execute deterministically with no model in the loop. You can write
+`.nano` source by hand and never touch a model.
+
+**Can a Nano program place an order / call an API / act on the world?**
+No, by construction. Programs emit *intents*; a pluggable gate (your risk engine, policy
+layer, or a human) approves or rejects each one, with a recorded reason.
+
+**Is this only for trading?**
+No. Trading is the first workload because it is the most measurable one. The architecture
+targets any Observe → Decide → Act → Record loop: automation, monitoring/response, robotics.
+
+**How is this different from LangChain or LangGraph?**
+Those orchestrate live model calls; state and control flow involve the model at runtime. Nano
+compiles behavior *ahead of time* into a replayable IR — the model is never the router. See
+[Paper 01](docs/papers/01-why-nano.md) for the full landscape comparison.
+
+**Is it production-ready?**
+It is a research preview with 173 passing tests. The core (IR, compiler, interpreter, bridge)
+is real and tested; the CLI and several typing features are still design. The
+[status table](#status--whats-real) is kept honest.
+
+## Contributing
+
+Contributions are welcome — the [strategy library](nano/library/README.md) is the easiest
+entry point (add a classic strategy as `.nano` source + expected IR), and
+[CONTRIBUTING.md](CONTRIBUTING.md) covers setup, tests, and where help is most valuable.
+Security reports: see [SECURITY.md](SECURITY.md).
+
 ## Documentation
 
 | Document | Contents |
@@ -259,6 +340,8 @@ research.
 | [Build Order](BUILD_ORDER.md) | IR-first build sequence, the intent/gate lock, milestone status |
 | [Strategy Library](nano/library/README.md) | Pine-inspired quant strategy corpus + contribution guide |
 | [Optimization Loop](docs/nano-optimization-loop.md) | Nano++ autonomous optimization loop overview |
+| [Contributing](CONTRIBUTING.md) | Dev setup, test workflow, contribution areas |
+| [Security Policy](SECURITY.md) | Reporting, threat model, what determinism does and doesn't protect |
 
 ---
 

@@ -34,6 +34,7 @@ Documentation = "https://github.com/DBarr3/Nano/tree/main/docs/papers"
 # Signed, non-repudiable audit receipts over risk-gate decisions.
 # See nano/bridge/provenance.py.
 provenance = ["aether-protocol-c"]
+dev = ["pytest>=7"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
