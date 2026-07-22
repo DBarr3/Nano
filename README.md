@@ -4,7 +4,7 @@
 
 # Nano
 
-### The compiler language for autonomous AI agents
+### The first compiled language for autonomous systems.
 
 **Compile reasoning into deterministic, auditable execution.**
 
