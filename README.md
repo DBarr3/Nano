@@ -1,10 +1,14 @@
 <div align="center">
 
-<img src="assets/nano-logo.svg" alt="Nano — a compiled execution language, by Aether AI" width="560" />
+<img src="assets/nano-hex.png" alt="Nano — deterministic AI agent compiler" width="210" />
 
-### A compiled execution language for autonomous engineering systems
+# Nano
 
-**Compile AI reasoning into deterministic, auditable execution.**
+### The compiler layer for autonomous AI agents
+
+**Compile reasoning into deterministic, auditable execution.**
+
+*Reason once. Compile forever.*
 
 [![CI](https://github.com/DBarr3/Nano/actions/workflows/ci.yml/badge.svg)](https://github.com/DBarr3/Nano/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-22d3ee.svg)](LICENSE)
@@ -12,93 +16,78 @@
 [![Tests](https://img.shields.io/badge/tests-173%20passing-22c55e.svg)](tests)
 [![Made by Aether AI](https://img.shields.io/badge/made%20by-Aether%20AI-0ea5e9.svg)](https://aethersystems.net)
 
-**[aethersystems.net](https://aethersystems.net)** · **[Run it in Aether Code →](https://app.aethersystems.net/code)** · **[Read the papers →](docs/papers/README.md)**
-
-`autonomous-ai` · `quantitative-trading` · `deterministic-execution` · `ai-agents` · `compiler`
+**[Website](https://aethersystems.net)** · **[Playground (Aether Code) →](https://app.aethersystems.net/code)** · **[Papers →](docs/papers/README.md)**
 
 </div>
 
 ---
 
-Nano is a language and compilation framework for building agentic systems. Instead of
-repeatedly querying a model for every decision, an agent's behavior is **compiled** into
-reusable, replayable execution graphs — deterministic where the world is known, escalating
-back to reasoning where it isn't.
+> Current AI agents ask a model what to do on every step.
+>
+> Nano compiles reasoning into execution graphs that can **run, replay, audit, and improve**.
+
+> **Status:** research preview · Milestones 1–6 shipped · **173 tests passing**. The IR, compiler,
+> interpreter, risk-gate bridge, and optimization loop are real and tested; the CLI and
+> `Series<T>` typing are still design. [Full status ↓](#status--whats-real)
+
+## What is Nano?
+
+Nano is an open-source **compiler and runtime for deterministic AI agents**.
+
+Today's agents repeatedly do:
 
 ```
-Nano is not a replacement for intelligence.
-Nano is the compiled memory of intelligence.
+Observe → LLM → Decide → Act → Repeat
 ```
 
-> **Status: Milestones 1–6 shipped · 173 tests passing.** Research preview — the IR, compiler,
-> reference interpreter, risk-gate bridge, editor services, and autonomous optimization loop are
-> implemented and tested. The CLI, `Series<T>` look-ahead typing, and real quantum-hardware
-> dispatch are still design/research. See [status](#status--whats-real) below.
-
----
-
-## Start here
-
-New to Nano? Follow the path that fits you.
-
-| I want to… | Go to |
-|---|---|
-| **Understand the idea in 2 minutes** | [The problem & the approach](#the-problem) below |
-| **Read the argument in depth** | [The paper series](docs/papers/README.md) — one question per paper |
-| **Run something now** | [Quickstart](#quickstart) |
-| **See real strategies** | [`nano/examples/`](nano/examples/) · [`nano/library/`](nano/library/README.md) |
-| **Understand the guarantees** | [Design guarantees](#design-guarantees) |
-| **See how it's built** | [BUILD_ORDER.md](BUILD_ORDER.md) |
-| **Know what's real vs. roadmap** | [Status](#status--whats-real) |
-
-**Read the papers in order?** Start with these four — they carry the whole thesis:
-[Why Nano](docs/papers/01-why-nano.md) → [The Agentic Compiler](docs/papers/02-the-agentic-compiler.md)
-→ [Determinism](docs/papers/03-determinism.md) → [Provenance](docs/papers/04-provenance.md).
-
----
-
-## The problem
-
-Current AI systems are inference-heavy. Every decision requires:
+Expensive, slow, and different every run. Nano changes the loop:
 
 ```
-User input → LLM inference → response → repeat
+Reason once
+   ↓
+Compile behavior
+   ↓
+Execute deterministically
+   ↓
+Escalate only when needed
 ```
 
-High latency, high cost, limited autonomy, inconsistent execution — the model is the
-bottleneck on every single tick.
+Instead of running an LLM for every decision, Nano compiles agent behavior into reusable
+execution graphs. Known situations execute deterministically. Unknown situations escalate
+back to reasoning.
 
-## The approach
+The result:
 
-Nano introduces a new layer between reasoning and execution:
+- **Lower inference cost** — the model runs on escalation, not on every tick
+- **Reproducible behavior** — identical inputs replay bit-for-bit, log included
+- **Audit trails** — every decision is proposed, gated, and recorded
+- **Safer autonomous systems** — programs emit intents; a policy gate decides
 
-```
-Reasoning → Compilation → Execution
-```
+> Nano is not a replacement for intelligence.
+>
+> Nano is the **compiled memory** of intelligence.
 
-An AI system (or a human) reasons **once**, compiles the behavior into Nano, and executes it
-efficiently through deterministic runtimes. Novel or out-of-distribution situations route back
-to reasoning — everything repeatable becomes deterministic, auditable computation. The model is
-the author and the escalation path, never the per-tick decision bottleneck.
+## Why Nano exists
 
-Any system where an AI proposes actions and something must decide whether they run is a Nano
-target: autonomous agents, automation pipelines, monitoring and response workflows, robotics —
-anywhere an **Observe → Decide → Act → Record** loop exists. Quantitative trading is the
-**first workload, not the product**: deterministic inputs, replayable history, measurable
-outcomes.
+Current AI agents spend intelligence repeatedly. Nano compiles intelligence once and reuses it.
 
-## Why Nano?
+The model is the **author** and the **escalation path** — never the per-tick decision
+bottleneck. That single inversion is what makes deterministic AI agents possible: inference
+becomes the exception; execution becomes the default.
 
-Every existing way to run agent logic fails somewhere specific:
+## Nano vs. the alternatives
 
-| If you use… | You get… |
-|---|---|
-| Hand-written scripts | Fast, but unauditable — no provenance, no replay |
-| LLM-in-the-loop agents | Flexible, but slow, expensive, and non-deterministic on every tick |
-| Conversational frameworks (AutoGen, CrewAI) | State is chat history — rollback is impossible |
-| Graph frameworks (LangGraph) | Auditable state, heavy token overhead, hard multi-agent debugging |
-| Durable engines (Temporal) | Bulletproof execution, crushing ops burden, not LLM-native |
-| **Nano** | **Reason once, compile, replay forever — deterministic by construction** |
+| Approach | Strength | Limitation |
+|---|---|---|
+| Hand-written scripts | Fast | No reasoning layer, no audit trail |
+| LLM-in-the-loop agents | Flexible | Expensive, slow, inconsistent |
+| Workflow engines | Reliable | Heavy ops, not AI-native |
+| **Nano** | **Intelligence + deterministic execution** | New architecture |
+
+<details>
+<summary><b>Full capability comparison</b></summary>
+
+<br>
 
 | Capability | Nano | Typical agent frameworks |
 |---|---|---|
@@ -110,12 +99,20 @@ Every existing way to run agent logic fails somewhere specific:
 | Backtest / live parity | ✅ same artifact | rare |
 | Dedicated server infrastructure | ❌ pure Python | varies |
 
+</details>
+
 The full argument — the orchestration crisis, prompt compilation, the state-management
 landscape — is [Paper 01: Why Nano](docs/papers/01-why-nano.md).
 
+Any system where an AI proposes actions and something must decide whether they run is a Nano
+target: autonomous agents, automation pipelines, monitoring and response workflows, robotics —
+anywhere an **Observe → Decide → Act → Record** loop exists. Quantitative trading is the
+**first workload, not the product**: deterministic inputs, replayable history, measurable
+outcomes.
+
 ---
 
-## Architecture
+## Architecture — the missing layer between AI and execution
 
 ```
         .nano source (human- or AI-authored)
@@ -146,9 +143,7 @@ Write Once. Optimize Everywhere. Execute Anywhere.
 Every compiled workflow carries provenance and a fallback route. Known states execute
 deterministically; unknown states escalate back to reasoning.
 
----
-
-## Example
+## See Nano in action
 
 ```nano
 strategy Momentum {
@@ -166,8 +161,24 @@ strategy Momentum {
 }
 ```
 
-This compiles to a deterministic execution graph: the scheduler owns the clock, the risk
-engine owns every order, and every decision is replayable bit-for-bit.
+What happens to that file:
+
+```
+strategy.nano
+     ↓
+  Compiler          type-checked, effect-checked
+     ↓
+  Nano IR           content-addressed execution graph
+     ↓
+  Replay            bit-identical against recorded frames
+     ↓
+  Decision gate     intent approved or rejected, with reason
+     ↓
+  Recorded result   append-only audit log
+```
+
+The scheduler owns the clock, the gate owns every order, and every decision is replayable
+bit-for-bit.
 
 ## Quickstart
 
@@ -197,6 +208,18 @@ See [`nano/examples/`](nano/examples/) for the conformance corpus (`basic_rsi`, 
 `mean_reversion`, `volatility_guard`, `risk_manager`, `ai_agent`) — each exists as `.nano`
 source and hand-written IR JSON that must match bit-for-bit.
 
+### Find your path
+
+| I want to… | Go to |
+|---|---|
+| **Run something now** | [Quickstart](#quickstart) above · [Aether Code](https://app.aethersystems.net/code) |
+| **See real strategies** | [`nano/examples/`](nano/examples/) · [`nano/library/`](nano/library/README.md) |
+| **Read the argument in depth** | [The paper series](docs/papers/README.md) — one question per paper |
+| **Understand the guarantees** | [Deterministic by construction](#deterministic-by-construction) |
+| **See how it's built** | [BUILD_ORDER.md](BUILD_ORDER.md) |
+| **Know what's real vs. roadmap** | [Status](#status--whats-real) |
+| **Contribute** | [CONTRIBUTING.md](CONTRIBUTING.md) |
+
 ---
 
 ## The defining rule: agents propose, gates decide
@@ -217,7 +240,7 @@ For deployments that need proof a decision happened — not just a log line — 
 disposition also produces a signed, independently re-verifiable receipt. Entirely outside the
 language.
 
-## Design guarantees
+## Deterministic by construction
 
 | Guarantee | How |
 |---|---|
@@ -231,9 +254,7 @@ language.
 Restrictions are the feature. Nano intentionally removes sockets, randomness, arbitrary IO,
 threads, and mutable globals — each one destroys replayability.
 
----
-
-## The Nano family
+## Nano architecture roadmap
 
 Three conceptual tiers over one compiler and one IR. A user starts with `buy when RSI < 30`
 and never has to leave the language as their agents grow.
@@ -243,41 +264,6 @@ and never has to leave the language as their agents grow.
 | **Nano** (this repo) | *What should the agent do?* — rules and intents | shipped |
 | **Nano+** | *How should it reason and coordinate?* — memory, confidence routing, multi-agent | roadmap |
 | **Nano++** | *How is complex computation optimized and secured?* — optimization, quantum research track | early |
-
-The Nano++ autonomous optimization loop ([`nano/loop/`](nano/loop/)) already ships a
-vendor-agnostic `QuantumRuntime` protocol with a deterministic `SimulatorRuntime` reference
-backend. Real-hardware dispatch remains research, not a promise.
-
----
-
-## The paper series
-
-Seventeen short papers, each answering one question — **[docs/papers/](docs/papers/README.md)**.
-
-| Papers | Theme |
-|---|---|
-| [Why Nano](docs/papers/01-why-nano.md) · [The Agentic Compiler](docs/papers/02-the-agentic-compiler.md) · [Determinism](docs/papers/03-determinism.md) · [Provenance](docs/papers/04-provenance.md) | the core thesis |
-| [Why Not Go](docs/papers/05-why-not-go.md) · [Why Not TypeScript](docs/papers/06-why-not-typescript.md) · [Nano vs. Pine](docs/papers/07-nano-vs-pine.md) | positioning |
-| [LLM Integration](docs/papers/08-llm-integration.md) · [Autonomous Systems](docs/papers/09-autonomous-systems.md) · [The Nano Family](docs/papers/10-nano-family.md) | scope |
-| [Performance](docs/papers/11-performance.md) · [Security](docs/papers/12-security.md) · [Design Principles](docs/papers/13-design-principles.md) · [Future Work](docs/papers/14-future-work.md) | engineering |
-| [Closed-Loop Engineering](docs/papers/15-closed-loop-engineering.md) · [Quantum Computing](docs/papers/16-quantum-computing.md) · [Heterogeneous Compute](docs/papers/17-heterogeneous-compute.md) | the horizon |
-
-## Status — what's real
-
-| Shipped (tested) | Design / roadmap / research |
-|---|---|
-| Nano IR (`nano/ir/`) | CLI (`nano compile` / `replay` / `visualize`) |
-| Reference interpreter (`nano/runtime/`) | `Series<T>` look-ahead typing |
-| `.nano` → IR compiler (`nano/compiler/`) | Nano+ adaptive layer (memory, multi-agent) |
-| Risk-gate bridge + backtester (`nano/bridge/`) | Real quantum-hardware dispatch |
-| Editor services (`nano/aethercode/`) | Cognitive execution / confidence routing |
-| Pattern cache (`nano/memory/`) + optimization loop (`nano/loop/`) | |
-| Conformance corpus (`nano/examples/`) + strategy library (`nano/library/`) | |
-
-Every claim in the docs cites shipped code or is explicitly labeled design, roadmap, or
-research.
-
-## Roadmap
 
 ```
 Shipped        →  IR · compiler · deterministic interpreter · risk-gate bridge
@@ -290,8 +276,10 @@ Then           →  Nano+ adaptive layer — memory, confidence routing, multi-a
                   Real quantum-hardware dispatch (research)
 ```
 
-Details and sequencing rationale: [BUILD_ORDER.md](BUILD_ORDER.md) ·
-[Paper 14: Future Work](docs/papers/14-future-work.md).
+The Nano++ autonomous optimization loop ([`nano/loop/`](nano/loop/)) already ships a
+vendor-agnostic `QuantumRuntime` protocol with a deterministic `SimulatorRuntime` reference
+backend. Real-hardware dispatch remains research, not a promise. Details and sequencing:
+[BUILD_ORDER.md](BUILD_ORDER.md) · [Paper 14: Future Work](docs/papers/14-future-work.md).
 
 ## FAQ
 
@@ -324,6 +312,36 @@ compiles behavior *ahead of time* into a replayable IR — the model is never th
 It is a research preview with 173 passing tests. The core (IR, compiler, interpreter, bridge)
 is real and tested; the CLI and several typing features are still design. The
 [status table](#status--whats-real) is kept honest.
+
+## The paper series
+
+Seventeen short papers, each answering one question — **[docs/papers/](docs/papers/README.md)**.
+Start with these four; they carry the whole thesis:
+[Why Nano](docs/papers/01-why-nano.md) → [The Agentic Compiler](docs/papers/02-the-agentic-compiler.md)
+→ [Determinism](docs/papers/03-determinism.md) → [Provenance](docs/papers/04-provenance.md).
+
+| Papers | Theme |
+|---|---|
+| [Why Nano](docs/papers/01-why-nano.md) · [The Agentic Compiler](docs/papers/02-the-agentic-compiler.md) · [Determinism](docs/papers/03-determinism.md) · [Provenance](docs/papers/04-provenance.md) | the core thesis |
+| [Why Not Go](docs/papers/05-why-not-go.md) · [Why Not TypeScript](docs/papers/06-why-not-typescript.md) · [Nano vs. Pine](docs/papers/07-nano-vs-pine.md) | positioning |
+| [LLM Integration](docs/papers/08-llm-integration.md) · [Autonomous Systems](docs/papers/09-autonomous-systems.md) · [The Nano Family](docs/papers/10-nano-family.md) | scope |
+| [Performance](docs/papers/11-performance.md) · [Security](docs/papers/12-security.md) · [Design Principles](docs/papers/13-design-principles.md) · [Future Work](docs/papers/14-future-work.md) | engineering |
+| [Closed-Loop Engineering](docs/papers/15-closed-loop-engineering.md) · [Quantum Computing](docs/papers/16-quantum-computing.md) · [Heterogeneous Compute](docs/papers/17-heterogeneous-compute.md) | the horizon |
+
+## Status — what's real
+
+| Shipped (tested) | Design / roadmap / research |
+|---|---|
+| Nano IR (`nano/ir/`) | CLI (`nano compile` / `replay` / `visualize`) |
+| Reference interpreter (`nano/runtime/`) | `Series<T>` look-ahead typing |
+| `.nano` → IR compiler (`nano/compiler/`) | Nano+ adaptive layer (memory, multi-agent) |
+| Risk-gate bridge + backtester (`nano/bridge/`) | Real quantum-hardware dispatch |
+| Editor services (`nano/aethercode/`) | Cognitive execution / confidence routing |
+| Pattern cache (`nano/memory/`) + optimization loop (`nano/loop/`) | |
+| Conformance corpus (`nano/examples/`) + strategy library (`nano/library/`) | |
+
+Every claim in the docs cites shipped code or is explicitly labeled design, roadmap, or
+research.
 
 ## Contributing
 
