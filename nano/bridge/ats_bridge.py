@@ -1,16 +1,22 @@
-"""Risk-gate adapter — the Milestone 5 hand-off from Nano intents to a risk engine.
+"""Decision gate adapter.
 
-Embedding note: this module is designed to be embedded in a host trading
-platform's execution layer. Every import is absolute from the ``nano`` package
-so the file works unchanged wherever the ``nano`` package is installed.
+Nano produces proposals.
+An external gate evaluates them.
 
-Invariant protected here: **the bridge never executes anything.** Nano
-strategies emit Intents; the injected risk engine disposes of each one; an
-approved ``RiskDecision`` is still just a record handed back to the caller.
-The host platform's own execution/release-gate discipline consumes those
-records — components propose, gates decide. The bridge is a pure function of
-(graph, frame, risk engine): no ambient clock, no randomness, no I/O in the
-run path, so every run is deterministic and replayable.
+The bridge intentionally does not perform actions. It only connects:
+    
+    Nano graph
+        ↓
+    emitted intents
+        ↓
+    decision gate
+        ↓
+    recorded decisions
+
+This keeps execution deterministic and auditable.
+
+The bridge has no clock, randomness, or side effects in the run path.
+Given the same graph, inputs, and gate behavior, the result is replayable.
 """
 
 from __future__ import annotations
