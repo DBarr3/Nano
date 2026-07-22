@@ -1,4 +1,5 @@
 # Nano
+<img width="267" height="335" alt="image" src="https://github.com/user-attachments/assets/a86a670c-334f-485c-867c-79388daef1dd" />
 
 **A compiled execution architecture for autonomous engineering systems.**
 Compile AI reasoning into deterministic, auditable execution.
