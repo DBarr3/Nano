@@ -14,8 +14,8 @@ import pytest
 from nano.bridge import (
     NanoBridge,
     ProtocolCUnavailable,
-    ProvenanceRiskEngine,
-    RiskDecision,
+    ProvenanceGate,
+    Decision,
 )
 from nano.bridge import provenance as provenance_module
 from nano.compiler import compile_source
@@ -39,38 +39,38 @@ class ThresholdEngine:
     def __init__(self, floor: float = 0.8) -> None:
         self._floor = floor
 
-    def dispose(self, intent: Intent, *, frame: MarketFrame) -> RiskDecision:
+    def decide(self, intent: Intent, *, frame: MarketFrame) -> Decision:
         approved = (intent.confidence or 0.0) >= self._floor
         reason = f"confidence>={self._floor}" if approved else "confidence below floor"
-        return RiskDecision(intent=intent, approved=approved, reason=reason)
+        return Decision(intent=intent, approved=approved, reason=reason)
 
 
 def test_availability_guard_raises_with_install_instructions(monkeypatch, tmp_path):
     monkeypatch.setattr(provenance_module, "PROTOCOL_C_AVAILABLE", False)
     with pytest.raises(ProtocolCUnavailable, match="pip install aether-protocol-c"):
-        ProvenanceRiskEngine(ThresholdEngine(), tmp_path / "audit.jsonl")
+        ProvenanceGate(ThresholdEngine(), tmp_path / "audit.jsonl")
 
 
-def test_dispose_returns_inner_decision_unchanged(tmp_path):
+def test_decide_returns_inner_decision_unchanged(tmp_path):
     inner = ThresholdEngine(floor=0.8)
-    engine = ProvenanceRiskEngine(inner, tmp_path / "audit.jsonl")
+    engine = ProvenanceGate(inner, tmp_path / "audit.jsonl")
     intent = Intent(action="BUY", timestamp=300, asset="BTC", confidence=0.9)
     frame = MarketFrame(timestamps=(0, 300), signals={})
 
-    decision = engine.dispose(intent, frame=frame)
+    decision = engine.decide(intent, frame=frame)
 
-    assert isinstance(decision, RiskDecision)
+    assert isinstance(decision, Decision)
     assert decision.intent == intent
     assert decision.approved is True
     assert decision.reason == "confidence>=0.8"
 
 
 def test_receipt_created_and_self_verifies(tmp_path):
-    engine = ProvenanceRiskEngine(ThresholdEngine(), tmp_path / "audit.jsonl")
+    engine = ProvenanceGate(ThresholdEngine(), tmp_path / "audit.jsonl")
     intent = Intent(action="BUY", timestamp=300, asset="BTC", confidence=0.9)
     frame = MarketFrame(timestamps=(0, 300), signals={})
 
-    engine.dispose(intent, frame=frame)
+    engine.decide(intent, frame=frame)
 
     assert len(engine.receipts) == 1
     order_id, receipt = next(iter(engine.receipts.items()))
@@ -82,11 +82,11 @@ def test_receipt_created_and_self_verifies(tmp_path):
 
 def test_rejected_intent_still_gets_a_signed_receipt(tmp_path):
     """A "no" is a decision too -- provenance covers rejections, not just approvals."""
-    engine = ProvenanceRiskEngine(ThresholdEngine(floor=0.95), tmp_path / "audit.jsonl")
+    engine = ProvenanceGate(ThresholdEngine(floor=0.95), tmp_path / "audit.jsonl")
     intent = Intent(action="BUY", timestamp=300, asset="BTC", confidence=0.5)
     frame = MarketFrame(timestamps=(0, 300), signals={})
 
-    decision = engine.dispose(intent, frame=frame)
+    decision = engine.decide(intent, frame=frame)
 
     assert decision.approved is False
     assert len(engine.receipts) == 1
@@ -96,10 +96,10 @@ def test_rejected_intent_still_gets_a_signed_receipt(tmp_path):
 
 
 def test_tampering_with_a_commitment_breaks_verification(tmp_path):
-    engine = ProvenanceRiskEngine(ThresholdEngine(), tmp_path / "audit.jsonl")
+    engine = ProvenanceGate(ThresholdEngine(), tmp_path / "audit.jsonl")
     intent = Intent(action="BUY", timestamp=300, asset="BTC", confidence=0.9)
     frame = MarketFrame(timestamps=(0, 300), signals={})
-    engine.dispose(intent, frame=frame)
+    engine.decide(intent, frame=frame)
 
     receipt = next(iter(engine.receipts.values()))
     tampered = dict(receipt.commitment)
@@ -111,11 +111,11 @@ def test_tampering_with_a_commitment_breaks_verification(tmp_path):
 
 def test_audit_log_is_append_only_jsonl(tmp_path):
     log_path = tmp_path / "audit.jsonl"
-    engine = ProvenanceRiskEngine(ThresholdEngine(), log_path)
+    engine = ProvenanceGate(ThresholdEngine(), log_path)
     frame = MarketFrame(timestamps=(0, 300, 600), signals={})
 
     for ts in (300, 600):
-        engine.dispose(Intent(action="BUY", timestamp=ts, asset="BTC", confidence=0.9), frame=frame)
+        engine.decide(Intent(action="BUY", timestamp=ts, asset="BTC", confidence=0.9), frame=frame)
 
     lines = log_path.read_text(encoding="utf-8").strip().splitlines()
     assert len(lines) == 2
@@ -126,13 +126,13 @@ def test_audit_log_is_append_only_jsonl(tmp_path):
 
 def test_nonce_is_monotonic_and_engine_owned(tmp_path):
     """Caller-supplied nonces are ignored -- the engine's own counter is authoritative."""
-    engine = ProvenanceRiskEngine(
+    engine = ProvenanceGate(
         ThresholdEngine(), tmp_path / "audit.jsonl", account_state={"nonce": 999}
     )
     frame = MarketFrame(timestamps=(0, 300, 600), signals={})
 
-    engine.dispose(Intent(action="BUY", timestamp=300, asset="BTC", confidence=0.9), frame=frame)
-    engine.dispose(Intent(action="BUY", timestamp=600, asset="BTC", confidence=0.9), frame=frame)
+    engine.decide(Intent(action="BUY", timestamp=300, asset="BTC", confidence=0.9), frame=frame)
+    engine.decide(Intent(action="BUY", timestamp=600, asset="BTC", confidence=0.9), frame=frame)
 
     nonces = [r.commitment["nonce"] for r in engine.receipts.values()]
     assert nonces == [1, 2]
@@ -143,12 +143,12 @@ def test_end_to_end_through_bridge_and_replay_stays_deterministic(tmp_path):
     graph = compile_source(MOMENTUM_SOURCE)
     frame = MarketFrame(timestamps=(0, 300), signals={"RSI": (45.0, 22.0)})
 
-    engine_a = ProvenanceRiskEngine(ThresholdEngine(), tmp_path / "run_a.jsonl")
+    engine_a = ProvenanceGate(ThresholdEngine(), tmp_path / "run_a.jsonl")
     bridge_a = NanoBridge(engine_a)
     bridge_a.load(graph.to_dict())
     result_a = bridge_a.run(frame)
 
-    engine_b = ProvenanceRiskEngine(ThresholdEngine(), tmp_path / "run_b.jsonl")
+    engine_b = ProvenanceGate(ThresholdEngine(), tmp_path / "run_b.jsonl")
     bridge_b = NanoBridge(engine_b)
     bridge_b.load(graph.to_dict())
     result_b = bridge_b.run(frame)

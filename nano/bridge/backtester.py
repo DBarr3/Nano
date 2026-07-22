@@ -17,7 +17,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Sequence, Tuple
 
-from nano.bridge.ats_bridge import BridgeResult, NanoBridge, RiskEngine
+from nano.bridge.ats_bridge import BridgeResult, NanoBridge, DecisionGate
 from nano.ir.graph import StrategyGraph
 from nano.runtime.effects import LogEntry
 from nano.runtime.interpreter import MarketFrame
@@ -50,10 +50,10 @@ class BacktestReport:
 
 
 class Backtester:
-    """Runs a validated graph over recorded frames through the bridge + risk gate."""
+    """Runs a validated graph over recorded frames through the bridge + decision gate."""
 
-    def __init__(self, risk_engine: RiskEngine) -> None:
-        self._risk_engine = risk_engine
+    def __init__(self, gate: DecisionGate) -> None:
+        self._gate = gate
 
     def run(self, graph: StrategyGraph, frames: Sequence[MarketFrame]) -> BacktestReport:
         """Execute the graph over every frame in order; aggregate the results.
@@ -62,7 +62,7 @@ class Backtester:
         bridge's ``load``, so the effect manifest is re-verified at the start
         of every backtest.
         """
-        bridge = NanoBridge(self._risk_engine)
+        bridge = NanoBridge(self._gate)
         bridge.load(graph.to_dict())
 
         results: list[BridgeResult] = []

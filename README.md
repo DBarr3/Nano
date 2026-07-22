@@ -227,7 +227,7 @@ source and hand-written IR JSON that must match bit-for-bit.
 A Nano program **cannot act on the world directly**. There is no exchange API, no
 side-effecting call in the language — programs emit *intents*, and a pluggable gate disposes of
 each one (approve or reject, with a recorded reason). In trading that gate is a risk engine
-(implement the `RiskEngine` protocol in `nano/bridge/`); in any other agentic system it's
+(implement the `DecisionGate` protocol in `nano/bridge/`); in any other agentic system it's
 whatever policy layer owns the consequences.
 
 Every action is therefore proposed, gated, logged, and replayable — which is what makes

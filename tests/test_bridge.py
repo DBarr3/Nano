@@ -10,7 +10,7 @@ from nano.bridge import (
     BridgeError,
     NanoBridge,
     ReplayDivergence,
-    RiskDecision,
+    Decision,
 )
 from nano.ir.graph import StrategyGraph
 from nano.ir.schema import IRValidationError, ManifestViolation, NANO_IR_VERSION
@@ -42,35 +42,35 @@ def calm_frame(ts: int = 0) -> MarketFrame:
 
 
 @dataclass(frozen=True)
-class ThresholdRiskEngine:
+class ThresholdGate:
     """Deterministic stub gate: approve iff confidence >= threshold."""
 
     threshold: float
 
-    def dispose(self, intent, *, frame) -> RiskDecision:
+    def decide(self, intent, *, frame) -> Decision:
         confidence = intent.confidence if intent.confidence is not None else 0.0
         if confidence >= self.threshold:
-            return RiskDecision(
+            return Decision(
                 intent=intent,
                 approved=True,
                 reason=f"confidence {confidence} >= threshold {self.threshold}",
             )
-        return RiskDecision(
+        return Decision(
             intent=intent,
             approved=False,
             reason=f"confidence {confidence} < threshold {self.threshold}",
         )
 
 
-class StatefulRiskEngine:
+class StatefulGate:
     """Deliberately nondeterministic: decision depends on hidden call count."""
 
     def __init__(self) -> None:
         self.calls = 0
 
-    def dispose(self, intent, *, frame) -> RiskDecision:
+    def decide(self, intent, *, frame) -> Decision:
         self.calls += 1
-        return RiskDecision(
+        return Decision(
             intent=intent,
             approved=self.calls % 2 == 1,
             reason=f"call #{self.calls}",
@@ -83,11 +83,11 @@ def loaded_bridge(engine) -> NanoBridge:
     return bridge
 
 
-# --- RiskDecision paths ------------------------------------------------------
+# --- Decision paths ------------------------------------------------------
 
 
 def test_approved_path_exact_decision():
-    bridge = loaded_bridge(ThresholdRiskEngine(threshold=0.9))
+    bridge = loaded_bridge(ThresholdGate(threshold=0.9))
     result = bridge.run(fire_frame())
     assert len(result.intents) == 1
     assert len(result.decisions) == 1
@@ -102,21 +102,21 @@ def test_approved_path_exact_decision():
         "approved": True,
         "reason": "confidence 0.91 >= threshold 0.9",
     }
-    assert [e.event for e in result.log if e.event.startswith("risk.")] == ["risk.approved"]
+    assert [e.event for e in result.log if e.event.startswith("gate.")] == ["gate.approved"]
 
 
 def test_rejected_path_exact_decision():
-    bridge = loaded_bridge(ThresholdRiskEngine(threshold=0.95))
+    bridge = loaded_bridge(ThresholdGate(threshold=0.95))
     result = bridge.run(fire_frame())
     assert len(result.decisions) == 1
     decision = result.decisions[0]
     assert decision.approved is False
     assert decision.reason == "confidence 0.91 < threshold 0.95"
-    assert [e.event for e in result.log if e.event.startswith("risk.")] == ["risk.rejected"]
+    assert [e.event for e in result.log if e.event.startswith("gate.")] == ["gate.rejected"]
 
 
 def test_rejection_does_not_suppress_intent_from_audit_trail():
-    bridge = loaded_bridge(ThresholdRiskEngine(threshold=0.95))
+    bridge = loaded_bridge(ThresholdGate(threshold=0.95))
     result = bridge.run(fire_frame())
     # The rejected intent still appears in the intent tuple...
     assert len(result.intents) == 1
@@ -125,13 +125,13 @@ def test_rejection_does_not_suppress_intent_from_audit_trail():
     events = [e.event for e in result.log]
     assert "intent.emitted" in events
     assert "intent.forwarded" in events
-    assert "risk.rejected" in events
+    assert "gate.rejected" in events
     assert events.index("intent.emitted") < events.index("intent.forwarded")
-    assert events.index("intent.forwarded") < events.index("risk.rejected")
+    assert events.index("intent.forwarded") < events.index("gate.rejected")
 
 
 def test_no_intents_means_no_decisions():
-    bridge = loaded_bridge(ThresholdRiskEngine(threshold=0.9))
+    bridge = loaded_bridge(ThresholdGate(threshold=0.9))
     result = bridge.run(calm_frame())
     assert result.intents == ()
     assert result.decisions == ()
@@ -151,19 +151,19 @@ def test_manifest_violation_surfaces_at_load():
             {"type": "Intent", "action": "BUY", "asset": "BTC"},
         ],
     }
-    bridge = NanoBridge(ThresholdRiskEngine(threshold=0.9))
+    bridge = NanoBridge(ThresholdGate(threshold=0.9))
     with pytest.raises(ManifestViolation):
         bridge.load(bad_ir)
 
 
 def test_invalid_ir_surfaces_at_load():
-    bridge = NanoBridge(ThresholdRiskEngine(threshold=0.9))
+    bridge = NanoBridge(ThresholdGate(threshold=0.9))
     with pytest.raises(IRValidationError):
         bridge.load({"type": "NotAStrategy"})
 
 
 def test_run_before_load_is_an_explicit_error():
-    bridge = NanoBridge(ThresholdRiskEngine(threshold=0.9))
+    bridge = NanoBridge(ThresholdGate(threshold=0.9))
     with pytest.raises(BridgeError):
         bridge.run(fire_frame())
 
@@ -172,7 +172,7 @@ def test_run_before_load_is_an_explicit_error():
 
 
 def test_same_graph_frame_engine_twice_is_identical():
-    engine = ThresholdRiskEngine(threshold=0.9)
+    engine = ThresholdGate(threshold=0.9)
     a = loaded_bridge(engine).run(fire_frame())
     b = loaded_bridge(engine).run(fire_frame())
     assert a.to_dict() == b.to_dict()
@@ -186,7 +186,7 @@ def frames_fire_calm_fire():
 
 
 def test_backtest_report_counts_exact_all_approved():
-    backtester = Backtester(ThresholdRiskEngine(threshold=0.9))
+    backtester = Backtester(ThresholdGate(threshold=0.9))
     graph = StrategyGraph.from_dict(MOMENTUM_IR)
     report = backtester.run(graph, frames_fire_calm_fire())
     assert report.frames_run == 3
@@ -203,7 +203,7 @@ def test_backtest_report_counts_exact_all_approved():
 
 
 def test_backtest_report_counts_exact_all_rejected():
-    backtester = Backtester(ThresholdRiskEngine(threshold=0.95))
+    backtester = Backtester(ThresholdGate(threshold=0.95))
     graph = StrategyGraph.from_dict(MOMENTUM_IR)
     report = backtester.run(graph, frames_fire_calm_fire())
     assert report.intents_emitted == 2
@@ -212,21 +212,21 @@ def test_backtest_report_counts_exact_all_rejected():
 
 
 def test_backtest_aggregates_full_audit_log():
-    backtester = Backtester(ThresholdRiskEngine(threshold=0.9))
+    backtester = Backtester(ThresholdGate(threshold=0.9))
     graph = StrategyGraph.from_dict(MOMENTUM_IR)
     report = backtester.run(graph, frames_fire_calm_fire())
     assert len(report.log) == sum(len(r.log) for r in report.results)
-    assert [e.event for e in report.log].count("risk.approved") == 2
+    assert [e.event for e in report.log].count("gate.approved") == 2
 
 
 def test_verify_replay_passes_with_deterministic_engine():
-    backtester = Backtester(ThresholdRiskEngine(threshold=0.9))
+    backtester = Backtester(ThresholdGate(threshold=0.9))
     graph = StrategyGraph.from_dict(MOMENTUM_IR)
     assert backtester.verify_replay(graph, frames_fire_calm_fire()) is True
 
 
 def test_verify_replay_catches_nondeterministic_engine():
-    backtester = Backtester(StatefulRiskEngine())
+    backtester = Backtester(StatefulGate())
     graph = StrategyGraph.from_dict(MOMENTUM_IR)
     with pytest.raises(ReplayDivergence):
         backtester.verify_replay(graph, [fire_frame(0)])
@@ -236,7 +236,7 @@ def test_verify_replay_catches_nondeterministic_engine():
 
 
 def test_momentum_example_end_to_end():
-    engine = ThresholdRiskEngine(threshold=0.9)
+    engine = ThresholdGate(threshold=0.9)
     bridge = NanoBridge(engine)
     graph = bridge.load(str(MOMENTUM_JSON))
     assert graph.name == "Momentum"

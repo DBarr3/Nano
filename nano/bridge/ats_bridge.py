@@ -118,7 +118,7 @@ class NanoBridge:
         return graph
 
     def run(self, frame: MarketFrame) -> BridgeResult:
-        """Evaluate the loaded graph over one frame and forward intents.  Pure function of (loaded graph, frame, decision gate). Decisions are records, not actions. """
+        """Evaluate the loaded graph over one frame and forward intents.
 
         Pure function of (loaded graph, frame, decision gate). Nothing is
         executed here: decisions are records, not actions.
@@ -161,3 +161,8 @@ class NanoBridge:
             decisions=tuple(decisions),
             log=tuple(log),
         )
+
+
+# Backward-compatible aliases for the pre-decoupling, trading-flavored names.
+RiskDecision = Decision
+RiskEngine = DecisionGate

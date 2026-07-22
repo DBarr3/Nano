@@ -2,7 +2,7 @@
 
 This is a **host-integration concern, not a language feature**. A `.nano`
 strategy author has no syntax that reaches this module and no way to invoke
-or bypass it — it wraps whatever ``RiskEngine`` a host platform hands to
+or bypass it — it wraps whatever ``DecisionGate`` a host platform hands to
 ``NanoBridge``, entirely outside the IR and the compiler. Nano's contract
 (strategies propose, gates decide) already gives every decision a recorded
 reason; this module lets a production deployment additionally bind that
@@ -13,13 +13,13 @@ internal debugging.
 
 Requires the optional ``aether-protocol-c`` package
 (``pip install aether-protocol-c``, or this project's ``provenance`` extra).
-Constructing ``ProvenanceRiskEngine`` without it installed raises
+Constructing ``ProvenanceGate`` without it installed raises
 ``ProtocolCUnavailable`` with install instructions — it never silently
 degrades to unsigned logging.
 
-Determinism note: wrapping a ``RiskEngine`` here does not break bit-identical
+Determinism note: wrapping a ``DecisionGate`` here does not break bit-identical
 replay of a ``BridgeResult`` (Milestone 5's acceptance test). The returned
-``RiskDecision`` is the inner engine's decision, unchanged; the signature and
+``Decision`` is the inner engine's decision, unchanged; the signature and
 audit-log entry are a side channel the bridge never sees. Those side-channel
 records carry a real wall-clock timestamp and fresh entropy by design — that
 is what makes a receipt trustworthy evidence of *when* a decision happened,
@@ -36,7 +36,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, Mapping, Optional, Union
 
-from nano.bridge.ats_bridge import RiskDecision, RiskEngine
+from nano.bridge.ats_bridge import Decision, DecisionGate
 from nano.runtime.effects import Intent
 from nano.runtime.interpreter import MarketFrame
 
@@ -58,7 +58,7 @@ class ProvenanceError(Exception):
 
 
 _INSTALL_MESSAGE = (
-    "ProvenanceRiskEngine requires the optional 'aether-protocol-c' package. "
+    "ProvenanceGate requires the optional 'aether-protocol-c' package. "
     "Install with: pip install aether-protocol-c "
     "(source: https://github.com/DBarr3/PROTOCOL-C)"
 )
@@ -89,8 +89,8 @@ class ProvenanceReceipt:
         }
 
 
-class ProvenanceRiskEngine:
-    """Wraps a ``RiskEngine`` so every disposition also produces a signed receipt.
+class ProvenanceGate:
+    """Wraps a ``DecisionGate`` so every disposition also produces a signed receipt.
 
     Both approvals and rejections are signed and logged — a rejection is
     still a decision, and provenance over "we said no, here's the proof" is
@@ -99,7 +99,7 @@ class ProvenanceRiskEngine:
 
     def __init__(
         self,
-        inner: RiskEngine,
+        inner: DecisionGate,
         log_path: Union[str, Path],
         *,
         account_state: AccountStateSource = None,
@@ -142,13 +142,13 @@ class ProvenanceRiskEngine:
         state["nonce"] = self._nonce
         return state
 
-    def dispose(self, intent: Intent, *, frame: MarketFrame) -> RiskDecision:
+    def decide(self, intent: Intent, *, frame: MarketFrame) -> Decision:
         """Delegate to the inner engine, then sign a receipt over the result.
 
-        The returned ``RiskDecision`` is exactly the inner engine's decision —
+        The returned ``Decision`` is exactly the inner engine's decision —
         signing never alters, delays, or can veto a disposition.
         """
-        decision = self._inner.dispose(intent, frame=frame)
+        decision = self._inner.decide(intent, frame=frame)
 
         order_id = f"{intent.action}:{intent.asset or '_'}:{intent.timestamp}:{self._nonce + 1}"
         trade_details = {
@@ -164,7 +164,7 @@ class ProvenanceRiskEngine:
             order_id=order_id,
             trade_details=trade_details,
             account_state=account_state,
-            reasoning_text=f"nano risk gate: {decision.reason}",
+            reasoning_text=f"nano decision gate: {decision.reason}",
             reasoning_model=self._reasoning_model,
             log_path=str(self._log_path),
         )
@@ -194,3 +194,7 @@ class ProvenanceRiskEngine:
         if receipt is None:
             return False
         return bool(_protocol_c.verify(receipt.commitment, receipt.signature))
+
+
+# Backward-compatible alias for the pre-decoupling name.
+ProvenanceRiskEngine = ProvenanceGate
