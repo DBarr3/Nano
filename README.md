@@ -4,7 +4,7 @@
 
 # Nano
 
-### The compiler layer for autonomous AI agents
+### The compiler language for autonomous AI agents
 
 **Compile reasoning into deterministic, auditable execution.**
 
