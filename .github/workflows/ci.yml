@@ -41,10 +41,10 @@ jobs:
 
           wheel = next(Path("dist").glob("*.whl"))
           expected = {
-              "nano/examples/momentum.nano",
-              "nano/examples/momentum_ir.json",
-              "nano/library/momentum/rsi_oversold_reversal.nano",
-              "nano/library/momentum/rsi_oversold_reversal_ir.json",
+              path.as_posix()
+              for root in (Path("nano/examples"), Path("nano/library"))
+              for path in root.rglob("*")
+              if path.suffix in {".nano", ".json"}
           }
           with ZipFile(wheel) as archive:
               packaged = set(archive.namelist())

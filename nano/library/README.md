@@ -1,13 +1,19 @@
-# Nano strategy corpus
+# Nano strategy library
 
-This directory is a paired, trading-oriented **conformance corpus** for the Nano v0.1.0 language. It is not a package registry, a live-strategy service, or investment advice.
+This directory is Nano's contribution-ready, trading-oriented **strategy library and conformance corpus** for the v0.1.0 language. It is a place to learn from familiar ideas, compare clear signal contracts, and contribute new source/IR pairs—not a live-strategy service or investment advice.
 
 Every entry has two files:
 
 - `<name>.nano` - source written in the locked Nano grammar
 - `<name>_ir.json` - the canonical strategy IR expected from that source
 
-`tests/test_library.py` verifies that each pair compiles to the expected IR, round-trips through `StrategyGraph`, and produces deterministic reference-runtime results. The corpus makes the small language contract concrete.
+`tests/test_library.py` verifies that each pair compiles to the expected IR, round-trips through `StrategyGraph`, and produces deterministic reference-runtime results. The library gives quant researchers a concrete way to meet the language: start with an idea they already recognize, make its host signal contract explicit, then let the tests preserve that contract.
+
+## Learn, compare, contribute
+
+The current library contains 15 strategies across six familiar categories. Browse an entry to see the source, its expected IR, and the feed convention it assumes. When you are ready, a well-documented strategy pair is the most direct contribution to Nano.
+
+[Add a strategy →](../../CONTRIBUTING.md#add-a-strategy) · [Open a strategy proposal →](https://github.com/DBarr3/Nano/issues/new?template=strategy-library.yml)
 
 ## Categories
 
