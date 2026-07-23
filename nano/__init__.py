@@ -1,7 +1,8 @@
-"""Nano — deterministic intelligence execution graphs.
+"""Nano - deterministic, host-governed rule execution.
 
-IR-first: the execution graph (nano.ir) and reference runtime (nano.runtime)
-come before the surface language (nano.compiler, Milestone 4).
+The core package provides a small IR-first strategy DSL, a reference
+interpreter, and host-gate integration primitives. It does not include an LLM
+runtime, live-action connector, or general agent executor.
 """
 
 __version__ = "0.1.0"

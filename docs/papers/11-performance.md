@@ -1,5 +1,8 @@
 # 11 — Performance
 
+> **Design-note scope:** This essay may discuss proposals or research hypotheses beyond Nano v0.1.0. For the implemented contract, see [Architecture](../architecture.md), [Language](../language.md), and [Status](../status.md).
+
+
 **Answer in one sentence:** Nano's performance claim is architectural — replacing per-decision inference with compiled execution removes orders of magnitude of latency and cost by construction — while the runtime's own constants remain deliberately unmeasured until there are benchmarks worth trusting.
 
 ---
@@ -22,7 +25,7 @@ Three shipped components define the execution profile:
 
 ## What is honestly unmeasured
 
-The repository currently ships correctness tests (121 of them), not benchmarks. The following numbers do not exist yet, and no document in this series should be read as implying them:
+The repository currently ships correctness tests, not benchmarks. The following numbers do not exist yet, and no document in this series should be read as implying them:
 
 - Interpreter throughput (ticks/second) on realistic strategy graphs and frame sizes.
 - Pattern retrieval latency as a function of store size.
