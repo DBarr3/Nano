@@ -59,16 +59,7 @@ strategy Momentum {
 
 ## How Nano fits into your stack
 
-```mermaid
-flowchart LR
-    source[".nano strategy"] --> compiler["Nano compiler"]
-    compiler --> strategy_ir["StrategyGraph IR"]
-    strategy_ir --> runtime["Reference runtime"]
-    frame["Host MarketFrame<br/>(timestamps + signals)"] --> runtime
-    runtime --> intents["Intent(s) + ordered run log"]
-    intents --> gate["Host DecisionGate"]
-    gate --> decision["Decision record"]
-```
+![From a Nano strategy to a host-governed decision](assets/nano-governed-decision-flow.svg)
 
 Nano owns parsing, IR validation, and deterministic reference evaluation. Your host owns data quality, policy, persistence, and any real-world action. The same graph and frame produce the same reference result; bridge replay is deterministic when the host gate is deterministic too.
 
