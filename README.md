@@ -12,15 +12,19 @@
 
 </div>
 
-> **For quant teams and product engineers: write familiar decision rules, replay them against your own signals, and keep final authority in your own controls.**
->
-> Nano is a small, Python-embeddable language for transparent threshold rules. It compiles source into validated IR, evaluates host-provided numeric signals deterministically, and returns proposed `Intent` values plus an ordered run log—not an API call or an order.
+> **Write readable trading rules. Replay every outcome. Keep the final decision in your application.**
 
-**Alpha reference implementation (v0.1.0).** Nano is for systems that need repeatable, inspectable decisions without letting the rule itself call an exchange, API, or other external system. The examples are trading-oriented, but the core contract works anywhere a host supplies numeric signals and owns the policy boundary.
+Nano is a small, Python-embeddable language for transparent threshold rules. It compiles source into validated IR, evaluates host-provided numeric signals deterministically, and returns proposed `Intent` values with an ordered run log. It does not call an exchange, API, or other external system.
 
-## Quick start: compile, run, and verify
+**Alpha reference implementation (v0.1.0).** The examples are trading-oriented, but Nano fits any system where a host supplies numeric signals and must retain control over what happens next.
 
-From a fresh checkout, run a tested Momentum strategy and then the full suite:
+## Why Nano
+
+A rule and an approval are different jobs. Nano makes the rule compact, versioned, and replayable; your application owns data quality, policy, persistence, and real-world effects. That separation makes a decision trail easier to inspect without giving a script authority over your infrastructure.
+
+## Quick start
+
+From a fresh checkout, run the bundled Momentum strategy and then the test suite:
 
 ```bash
 git clone https://github.com/DBarr3/Nano.git
@@ -35,13 +39,13 @@ python examples/momentum_demo.py
 python -m pytest -q
 ```
 
-The demo compiles the checked-in strategy, injects two RSI values, and prints the proposal that crosses the threshold:
+The demo compiles a checked-in strategy, injects two RSI values, and produces a proposed action:
 
 ```text
 BUY BTC at timestamp=300 (confidence=0.91)
 ```
 
-This is the small `.nano` program it runs:
+This is the complete `.nano` program it runs:
 
 <!-- README-EXAMPLE:START -->
 ```nano
@@ -57,108 +61,53 @@ strategy Momentum {
 
 `RSI(14)` is a source-level signal convention. In v0.1.0, the host computes and injects the `RSI` series; Nano does not calculate indicators or fetch market data. See the [language reference](docs/language.md) for the exact contract.
 
-## How Nano fits into your stack
+## From rule to governed decision
 
-```mermaid
-flowchart LR
-    source[".nano strategy"] --> compiler["Nano compiler"]
-    compiler --> graph["StrategyGraph IR"]
-    graph --> runtime["Reference runtime"]
-    frame["Host MarketFrame<br/>(timestamps + signals)"] --> runtime
-    runtime --> intents["Intent(s) + ordered run log"]
-    intents --> gate["Host DecisionGate"]
-    gate --> decision["Decision record"]
-```
+![From a Nano strategy to a host-governed decision](assets/nano-governed-decision-flow.svg)
 
-Nano owns parsing, IR validation, and deterministic reference evaluation. Your host owns data quality, policy, persistence, and any real-world action. The same graph and frame produce the same reference result; bridge replay is deterministic when the host gate is deterministic too.
+Nano owns parsing, IR validation, and deterministic reference evaluation. The host supplies the `MarketFrame`, applies its `DecisionGate`, stores the result, and performs any real-world action. The same graph and frame produce the same reference result; bridge replay is deterministic when the host gate is deterministic too.
 
-To add policy, provide a complete gate. Nano records its decision; it never places an order or calls an API:
+## Start with the strategy library
 
-```python
-from nano.bridge import Decision, NanoBridge
-
-
-class ApproveForDemo:
-    def decide(self, intent, *, frame):
-        return Decision(intent=intent, approved=True, reason="demo policy")
-
-
-bridge = NanoBridge(ApproveForDemo())
-bridge.load(graph.to_dict())
-bridge_result = bridge.run(frame)
-print([decision.to_dict() for decision in bridge_result.decisions])
-```
-
-## Explore the quant strategy library
-
-The strategy library is Nano's community on-ramp: a small, tested collection of familiar trading ideas translated into the DSL. It currently contains **15 paired strategies** across six categories.
+The [strategy library](nano/library/README.md) is Nano's community on-ramp: a small, tested corpus of familiar trading ideas translated into the DSL. Every entry pairs readable `.nano` source with expected IR, so quant researchers can learn the language, compare conventions, and contribute a new rule with confidence.
 
 | Momentum | Mean reversion | Trend | Volatility | Volume | Risk |
 | --- | --- | --- | --- | --- | --- |
 | 4 strategies | 3 strategies | 3 strategies | 2 strategies | 2 strategies | 1 strategy |
 
-Every entry pairs readable `.nano` source with expected IR. The test suite verifies compilation, `StrategyGraph` round-tripping, and deterministic replay. Use the library to learn the language, prototype an integration, or contribute a well-specified strategy—not as a performance claim, live signal service, or trading recommendation.
+The library is a conformance corpus, not a performance claim, live signal service, or trading recommendation.
 
-**Bring a rule to the library.** Start with a familiar strategy, document the host-provided signal convention, add its expected IR, and let the conformance suite keep the contract honest.
+[Browse strategies →](nano/library/README.md) · [Add a strategy →](CONTRIBUTING.md#add-a-strategy) · [Propose a language change →](https://github.com/DBarr3/Nano/issues/new?template=language-change.yml)
 
-[Browse the strategy library →](nano/library/README.md) · [Add a strategy →](CONTRIBUTING.md#add-a-strategy) · [Propose a language change →](https://github.com/DBarr3/Nano/issues/new?template=language-change.yml)
+## Small by design
+
+| Nano provides | The host retains |
+| --- | --- |
+| A small strategy source format, validated `StrategyGraph` IR, and deterministic reference evaluation | Signal calculation, data quality, and scheduling |
+| Named numeric signal series and AND-only threshold conditions | Policy, approvals, persistence, and external effects |
+| Proposed `buy`, `sell`, `execute`, `pause`, and `observe` intents | API calls, exchange execution, and any action with consequences |
+
+The current implementation has no variables, arithmetic, functions, imports, `or`/`not`, type system, CLI, LLM runtime, live data feed, or action executor. [`docs/status.md`](docs/status.md) separates implemented behavior from experimental work and future ideas.
 
 ## Build with Nano
 
-Nano stays approachable because its contract is deliberately small and every change is reviewable. We welcome:
+Nano stays approachable by keeping its contract narrow and changes reviewable. Contributions are welcome from:
 
-- **Quant researchers** translating a strategy into a source/IR pair with a clear signal contract.
-- **Application engineers** improving host integration, replay coverage, documentation, or developer experience.
-- **Language contributors** proposing grammar or IR changes through a focused issue before implementation.
+- **Quant researchers** who can add a strategy and document its signal convention.
+- **Application engineers** who can improve integrations, replay coverage, documentation, or developer experience.
+- **Language contributors** who can start a focused proposal before changing grammar or IR.
 
-Strategy and language proposals start with structured GitHub issue forms; focused pull requests then carry the source, expected IR, tests, and rationale together. See [CONTRIBUTING.md](CONTRIBUTING.md) for the contribution guide and [the issue templates](.github/ISSUE_TEMPLATE/) for a place to begin.
-
-## Why the boundary matters
-
-An application often needs to answer two separate questions:
-
-1. **What rule should propose an action?**
-2. **May that action have consequences here and now?**
-
-Nano keeps them separate. A `.nano` program describes the first as a compact, versioned artifact; the host retains the second through its own `DecisionGate`. That makes rule evaluation easy to replay, test, and audit without turning a rule into an authority to act.
-
-Nano does **not** include an LLM runtime, automatic escalation, a live data feed, an exchange/API connector, or an action executor. Those remain host concerns.
-
-## The language is intentionally small
-
-| Current capability | What it means |
-| --- | --- |
-| One strategy, schedule, and rule | A v0.1 strategy has at most one `every` block and one `if` rule. |
-| Numeric, host-provided signals | Conditions compare named signal series with numeric literals; Nano does not calculate indicators or fetch data. |
-| AND-only conditions | Every condition must pass before the rule emits its intents. |
-| Five intent actions | `buy`, `sell`, `execute`, `pause`, and `observe` emit proposals. `execute()` does not execute code. |
-| Manifest validation | The strategy IR rejects unknown node/effect names and intent nodes without `intent.emit`; it is not a static type system. |
-| Agent labels | `agent Name` is metadata today; the interpreter does not coordinate agents. |
-
-There are no variables, arithmetic, functions, imports, `or`/`not`, user-defined actions, type checking, or CLI in the current implementation. The exact grammar and execution semantics are documented in [docs/language.md](docs/language.md).
-
-## What ships today
-
-| Implemented and tested | Experimental or optional | Not implemented |
-| --- | --- | --- |
-| `.nano` lexer, parser, canonical strategy IR, and reference interpreter | `PatternStore` lookup primitive (not wired into the runtime) | LLM calls, automatic escalation, or agent orchestration |
-| Host `DecisionGate` bridge and deterministic replay checker | `LoopGraph` validation/hash helpers and a deterministic simulator protocol | CLI, type system, `Series<T>`, or general strategy graphs |
-| Diagnostics, semantic tokens, and IR preview helpers | Protocol-C provenance adapter when its optional dependency is installed | Live feeds, exchange/API execution, or persistent core audit storage |
-| Source/IR conformance corpus and strategy library | Real quantum-hardware dispatch | Autonomous loop execution or self-modifying deployment |
-
-For a fuller implementation map, see [Architecture](docs/architecture.md) and [Status](docs/status.md).
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the contribution workflow and the [issue templates](.github/ISSUE_TEMPLATE/) for a clear place to begin.
 
 ## Documentation
 
 | Need | Start here |
 | --- | --- |
-| Run the first example | [Momentum demo](examples/momentum_demo.py) |
 | Explore or contribute a strategy | [Strategy library](nano/library/README.md) |
-| Exact grammar and runtime semantics | [Language reference](docs/language.md) |
-| Module boundaries and data flow | [Architecture](docs/architecture.md) |
-| Implemented vs. experimental vs. planned work | [Status](docs/status.md) |
-| Integration and contribution setup | [Contributing](CONTRIBUTING.md) |
-| Security boundaries and reporting | [Security policy](SECURITY.md) |
-| Design essays and research directions | [Paper series](docs/papers/README.md) |
+| Learn the grammar and runtime semantics | [Language reference](docs/language.md) |
+| Understand module boundaries | [Architecture](docs/architecture.md) |
+| Check implemented versus experimental work | [Status](docs/status.md) |
+| Integrate or contribute | [Contributing](CONTRIBUTING.md) |
+| Report a security concern | [Security policy](SECURITY.md) |
 
-The paper series records design arguments and research directions; it is not the API specification. When a paper and the reference documentation differ, the source and tests define current behavior.
+The [paper series](docs/papers/README.md) records design arguments and research directions; source and tests define current behavior.
