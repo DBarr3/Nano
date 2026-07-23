@@ -62,8 +62,8 @@ strategy Momentum {
 ```mermaid
 flowchart LR
     source[".nano strategy"] --> compiler["Nano compiler"]
-    compiler --> graph["StrategyGraph IR"]
-    graph --> runtime["Reference runtime"]
+    compiler --> strategy_ir["StrategyGraph IR"]
+    strategy_ir --> runtime["Reference runtime"]
     frame["Host MarketFrame<br/>(timestamps + signals)"] --> runtime
     runtime --> intents["Intent(s) + ordered run log"]
     intents --> gate["Host DecisionGate"]
