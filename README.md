@@ -1,381 +1,169 @@
 <div align="center">
 
-<img src="assets/nano-hex.png" alt="Nano — deterministic AI agent compiler" width="210" />
+<img src="assets/nano-hex.png" alt="Nano logo" width="180" />
 
 # Nano
 
-### The first compiled language for autonomous systems.
-
-**Compile reasoning into deterministic, auditable execution.**
-
-*Reason once. Compile forever.*
+### A deterministic DSL for replayable, host-governed decision rules.
 
 [![CI](https://github.com/DBarr3/Nano/actions/workflows/ci.yml/badge.svg)](https://github.com/DBarr3/Nano/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-22d3ee.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.10%2B-38bdf8.svg)](pyproject.toml)
-[![Tests](https://img.shields.io/badge/tests-173%20passing-22c55e.svg)](tests)
-[![Made by Aether AI](https://img.shields.io/badge/made%20by-Aether%20AI-0ea5e9.svg)](https://aethersystems.net)
-[![GitHub Repo stars](https://img.shields.io/github/stars/DBarr3/Nano?style=social)](https://github.com/DBarr3/Nano/stargazers)
-
-**[Website](https://aethersystems.net)** · **[Playground (Aether Code) →](https://app.aethersystems.net/code)** · **[Papers →](docs/papers/README.md)**
-
-<sub>⭐ **Star this repo** — it's the single biggest signal that helps other engineers find Nano.</sub>
 
 </div>
 
----
+> **Alpha reference implementation (v0.1.0).** Nano compiles a deliberately small `.nano` strategy into validated, serializable IR. Its reference runtime evaluates caller-supplied numeric signals on a caller-supplied schedule and returns proposed actions (`Intent` values) plus an ordered event log. A host-owned gate decides whether to approve any proposal.
 
-> Current AI agents ask a model what to do on every step.
->
-> Nano compiles reasoning into execution graphs that can **run, replay, audit, and improve**.
+Nano is for systems that need repeatable, inspectable threshold decisions without letting the decision rule call an exchange, API, or other external system directly. The checked-in examples are trading-oriented, but the core contract is useful anywhere a host supplies numeric signals, owns the policy boundary, and needs deterministic replay.
 
-> **Status:** research preview · Milestones 1–6 shipped · **173 tests passing**. The IR, compiler,
-> interpreter, risk-gate bridge, and optimization loop are real and tested; the CLI and
-> `Series<T>` typing are still design. [Full status ↓](#status--whats-real)
+## Why Nano?
 
-## What is Nano?
+A host application often needs to answer two separate questions:
 
-Nano is an open-source **compiler and runtime for deterministic AI agents**.
+1. **What rule should propose an action?**
+2. **May that action have consequences here and now?**
 
-Today's agents repeatedly do:
+Nano keeps those questions separate. A `.nano` program describes the first as a compact, versioned artifact. The host retains the second through its own `DecisionGate`. This makes rule evaluation easy to replay, test, and audit without treating the rule as an authority to act.
 
-```
-Observe → LLM → Decide → Act → Repeat
-```
+Nano does **not** include an LLM runtime, automatic escalation, a live data feed, an exchange/API connector, or an action executor. Those remain host concerns.
 
-Expensive, slow, and different every run. Nano changes the loop:
+## From source to a governed decision
 
-```
-Reason once
-   ↓
-Compile behavior
-   ↓
-Execute deterministically
-   ↓
-Escalate only when needed
-```
-
-Instead of running an LLM for every decision, Nano compiles agent behavior into reusable
-execution graphs. Known situations execute deterministically. Unknown situations escalate
-back to reasoning.
-
-The result:
-
-- **Lower inference cost** — the model runs on escalation, not on every tick
-- **Reproducible behavior** — identical inputs replay bit-for-bit, log included
-- **Audit trails** — every decision is proposed, gated, and recorded
-- **Safer autonomous systems** — programs emit intents; a policy gate decides
-
-> Nano is not a replacement for intelligence.
->
-> Nano is the **compiled memory** of intelligence.
-
-## Why Nano exists
-
-Current AI agents spend intelligence repeatedly. Nano compiles intelligence once and reuses it.
-
-The model is the **author** and the **escalation path** — never the per-tick decision
-bottleneck. That single inversion is what makes deterministic AI agents possible: inference
-becomes the exception; execution becomes the default.
-
-## Nano vs. the alternatives
-
-| Approach | Strength | Limitation |
-|---|---|---|
-| Hand-written scripts | Fast | No reasoning layer, no audit trail |
-| LLM-in-the-loop agents | Flexible | Expensive, slow, inconsistent |
-| Workflow engines | Reliable | Heavy ops, not AI-native |
-| **Nano** | **Intelligence + deterministic execution** | New architecture |
-
-<details>
-<summary><b>Full capability comparison</b></summary>
-
-<br>
-
-| Capability | Nano | Typical agent frameworks |
-|---|---|---|
-| Deterministic, bit-identical replay | ✅ core guarantee | ❌ |
-| Serializable execution-graph IR | ✅ | ❌ |
-| LLM required on every decision | ❌ — only on escalation | usually |
-| Actions gated by a policy layer | ✅ enforced in the IR | limited / opt-in |
-| Signed provenance receipts | ✅ optional adapter | rare |
-| Backtest / live parity | ✅ same artifact | rare |
-| Dedicated server infrastructure | ❌ pure Python | varies |
-
-</details>
-
-The full argument — the orchestration crisis, prompt compilation, the state-management
-landscape — is [Paper 01: Why Nano](docs/papers/01-why-nano.md).
-
-Any system where an AI proposes actions and something must decide whether they run is a Nano
-target: autonomous agents, automation pipelines, monitoring and response workflows, robotics —
-anywhere an **Observe → Decide → Act → Record** loop exists. Quantitative trading is the
-**first workload, not the product**: deterministic inputs, replayable history, measurable
-outcomes.
-
----
-
-## Architecture — the missing layer between AI and execution
-
-```
-        .nano source (human- or AI-authored)
-                      │
-                      ▼
-                  Compiler
-        (lexer → parser → type checks)
-                      │
-                      ▼
-                   Nano IR
-   (deterministic, serializable execution graph)
-                      │
-        ┌─────────────┼─────────────┐
-        ▼             ▼             ▼
-    Backtest        Paper         Live
-    (recorded      (simulated    (via your
-     frames)        gate)         risk gate)
+```text
+.nano source
+    |
+    v
+lexer -> parser -> canonical StrategyGraph IR
+    |
+    v
+reference interpreter + injected MarketFrame
+    |
+    v
+Intent(s) + ordered per-run event log
+    |
+    v
+optional NanoBridge -> host DecisionGate -> Decision record(s)
 ```
 
-Everything compiles to **Nano IR** — a hardware-independent, deterministic, serializable
-execution graph. The same program runs in local development, historical backtesting, and live
-execution because it *is* the same artifact:
+The reference interpreter is a pure function of a validated strategy graph and a `MarketFrame`: the same inputs produce the same result. A bridge replay is deterministic only when the host gate is deterministic too; `Backtester.verify_replay()` compares two complete runs and reports divergence.
 
+The base event log is returned in memory with each result. Durable storage, signed receipts, and real-world actuation are outside the core runtime.
+
+## Run a real strategy
+
+Create an environment and install the package from a checkout:
+
+```bash
+python -m venv .venv
+# macOS/Linux
+source .venv/bin/activate
+# Windows PowerShell
+# .venv\Scripts\Activate.ps1
+
+pip install -e ".[dev]"
+python -m pytest -q
 ```
-Write Once. Optimize Everywhere. Execute Anywhere.
-```
 
-Every compiled workflow carries provenance and a fallback route. Known states execute
-deterministically; unknown states escalate back to reasoning.
+This is valid Nano v0.1.0 source from the checked-in conformance corpus:
 
-## See Nano in action
-
+<!-- README-EXAMPLE:START -->
 ```nano
 strategy Momentum {
-
   every 5m {
-
-    observe market
-
-    if RSI(14) < 30
-    and volume > average {
-
-      execute()
+    if RSI(14) < 30 {
+      buy(BTC, 0.91)
     }
   }
 }
 ```
+<!-- README-EXAMPLE:END -->
 
-What happens to that file:
+`RSI(14)` is a source-level signal convention. In v0.1.0, the host computes and injects the `RSI` series; the lookback label is not stored separately in strategy IR. See the [language reference](docs/language.md) for the full rule.
 
-```
-strategy.nano
-     ↓
-  Compiler          type-checked, effect-checked
-     ↓
-  Nano IR           content-addressed execution graph
-     ↓
-  Replay            bit-identical against recorded frames
-     ↓
-  Decision gate     intent approved or rejected, with reason
-     ↓
-  Recorded result   append-only audit log
-```
-
-The scheduler owns the clock, the gate owns every order, and every decision is replayable
-bit-for-bit.
-
-## Quickstart
-
-> **Prefer the browser?** The Nano compiler runs live in **[Aether Code](https://app.aethersystems.net/code)** —
-> a VS Code–style web IDE with syntax highlighting, inline diagnostics, and an IR preview. Write a
-> `.nano` strategy, compile it, and replay it deterministically without installing anything.
+Compile and run it against an injected frame:
 
 ```python
+from pathlib import Path
+
 from nano.compiler import compile_source
-from nano.runtime.interpreter import MarketFrame, execute
-from nano.bridge import NanoBridge
+from nano.runtime import MarketFrame, execute
 
-graph = compile_source(open("strategy.nano").read())
+source = Path("nano/examples/momentum.nano").read_text(encoding="utf-8")
+graph = compile_source(source)
+frame = MarketFrame(
+    timestamps=(0, 300),
+    signals={"RSI": (45.0, 22.0)},
+)
 
-frame = MarketFrame(timestamps=(0,), signals={"RSI": [25.0]})
-
-# Direct interpretation — pure, deterministic
 result = execute(graph, frame)
+print([intent.to_dict() for intent in result.intents])
+# [{'intent': 'BUY', 'timestamp': 300, 'asset': 'BTC', 'confidence': 0.91}]
+```
 
-# Or bridge into your own decision gate (any object with a .decide() method)
-bridge = NanoBridge(my_risk_engine)
+To involve policy, provide a complete host gate. The gate returns a record; it does not cause Nano to place an order or call an API:
+
+```python
+from nano.bridge import Decision, NanoBridge
+
+
+class ApproveForDemo:
+    def decide(self, intent, *, frame):
+        return Decision(intent=intent, approved=True, reason="demo policy")
+
+
+bridge = NanoBridge(ApproveForDemo())
 bridge.load(graph.to_dict())
-frame_result = bridge.run(frame)
+bridge_result = bridge.run(frame)
+print([decision.to_dict() for decision in bridge_result.decisions])
 ```
 
-See [`nano/examples/`](nano/examples/) for the conformance corpus (`basic_rsi`, `momentum`,
-`mean_reversion`, `volatility_guard`, `risk_manager`, `ai_agent`) — each exists as `.nano`
-source and hand-written IR JSON that must match bit-for-bit.
+## The language is intentionally small
 
-### Find your path
+| Current capability | What it means |
+| --- | --- |
+| One strategy, schedule, and rule | A v0.1 strategy has at most one `every` block and one `if` rule. |
+| Numeric, host-provided signals | Conditions compare named signal series with numeric literals; Nano does not calculate indicators or fetch data. |
+| AND-only conditions | Every condition must pass before the rule emits its intents. |
+| Five intent actions | `buy`, `sell`, `execute`, `pause`, and `observe` emit proposals. `execute()` does not execute code. |
+| Manifest validation | The strategy IR rejects unknown node/effect names and intent nodes without `intent.emit`; it is not a static type system. |
+| Agent labels | `agent Name` is metadata today; the interpreter does not coordinate agents. |
 
-| I want to… | Go to |
-|---|---|
-| **Run something now** | [Quickstart](#quickstart) above · [Aether Code](https://app.aethersystems.net/code) |
-| **See real strategies** | [`nano/examples/`](nano/examples/) · [`nano/library/`](nano/library/README.md) |
-| **Read the argument in depth** | [The paper series](docs/papers/README.md) — one question per paper |
-| **Understand the guarantees** | [Deterministic by construction](#deterministic-by-construction) |
-| **See how it's built** | [BUILD_ORDER.md](BUILD_ORDER.md) |
-| **Know what's real vs. roadmap** | [Status](#status--whats-real) |
-| **Contribute** | [CONTRIBUTING.md](CONTRIBUTING.md) |
+There are no variables, arithmetic, functions, imports, `or`/`not`, user-defined actions, type checking, or CLI in the current implementation. The exact grammar and execution semantics are documented in [docs/language.md](docs/language.md).
 
----
+## What ships today
 
-## The defining rule: agents propose, gates decide
+| Implemented and tested | Experimental or optional | Not implemented |
+| --- | --- | --- |
+| `.nano` lexer, parser, canonical strategy IR, and reference interpreter | `PatternStore` lookup primitive (not wired into the runtime) | LLM calls, automatic escalation, or agent orchestration |
+| Host `DecisionGate` bridge and deterministic replay checker | `LoopGraph` validation/hash helpers and a deterministic simulator protocol | CLI, type system, `Series<T>`, or general strategy graphs |
+| Diagnostics, semantic tokens, and IR preview helpers | Protocol-C provenance adapter when its optional dependency is installed | Live feeds, exchange/API execution, or persistent core audit storage |
+| Source/IR conformance corpus and strategy corpus | Real quantum-hardware dispatch | Autonomous loop execution or self-modifying deployment |
 
-A Nano program **cannot act on the world directly**. There is no exchange API, no
-side-effecting call in the language — programs emit *intents*, and a pluggable gate disposes of
-each one (approve or reject, with a recorded reason). In trading that gate is a risk engine
-(implement the `DecisionGate` protocol in `nano/bridge/`); in any other agentic system it's
-whatever policy layer owns the consequences.
+For a fuller implementation map, see [Architecture](docs/architecture.md) and [Status](docs/status.md).
 
-Every action is therefore proposed, gated, logged, and replayable — which is what makes
-autonomy auditable. It also enables AI-in-the-loop improvement: an analysis system proposes
-evidence-backed patches, a human disposes, the compiler recompiles, and release gates govern
-deployment. **Nothing self-modifies silently.**
+## A tested strategy corpus
 
-For deployments that need proof a decision happened — not just a log line — an optional adapter
-(`nano/bridge/provenance.py`, `pip install aether-nano[provenance]`) wraps any gate so every
-disposition also produces a signed, independently re-verifiable receipt. Entirely outside the
-language.
+Nano includes a paired source/IR corpus that keeps the language contract concrete:
 
-## Deterministic by construction
+- [`nano/examples/`](nano/examples/) contains the core conformance fixtures.
+- [`nano/library/`](nano/library/README.md) contains 15 trading-oriented strategies across momentum, mean-reversion, trend, volatility, volume, and risk categories.
 
-| Guarantee | How |
-|---|---|
-| Deterministic replay | No ambient clock or RNG — time and entropy are injected, logged inputs |
-| Strategies can't bypass risk | No exchange API in the language; programs emit intents, the runtime disposes |
-| No look-ahead in backtests | `Series<T>` types make peeking at the future a compile error *(design)* |
-| Least-privilege execution | Every IR module carries an effect manifest — a capability boundary |
-| Reproducible builds | Content-addressed IR, pinned package hashes |
-| Gated self-improvement | AI-compiled workflows pass admission gates before any runtime loads them |
-
-Restrictions are the feature. Nano intentionally removes sockets, randomness, arbitrary IO,
-threads, and mutable globals — each one destroys replayability.
-
-## Nano architecture roadmap
-
-Three conceptual tiers over one compiler and one IR. A user starts with `buy when RSI < 30`
-and never has to leave the language as their agents grow.
-
-| Tier | Question it answers | State |
-|---|---|---|
-| **Nano** (this repo) | *What should the agent do?* — rules and intents | shipped |
-| **Nano+** | *How should it reason and coordinate?* — memory, confidence routing, multi-agent | roadmap |
-| **Nano++** | *How is complex computation optimized and secured?* — optimization, quantum research track | early |
-
-```
-Shipped        →  IR · compiler · deterministic interpreter · risk-gate bridge
-                  backtester · pattern memory · editor services · optimization loop
-
-Next           →  CLI (nano compile / replay / visualize)
-                  Series<T> look-ahead typing (no-peek backtests as a compile error)
-
-Then           →  Nano+ adaptive layer — memory, confidence routing, multi-agent
-                  Real quantum-hardware dispatch (research)
-```
-
-The Nano++ autonomous optimization loop ([`nano/loop/`](nano/loop/)) already ships a
-vendor-agnostic `QuantumRuntime` protocol with a deterministic `SimulatorRuntime` reference
-backend. Real-hardware dispatch remains research, not a promise. Details and sequencing:
-[BUILD_ORDER.md](BUILD_ORDER.md) · [Paper 14: Future Work](docs/papers/14-future-work.md).
-
-## FAQ
-
-**Is Nano an LLM?**
-No. Nano is a compilation and execution layer. Models create reasoning; Nano compiles it into
-deterministic execution graphs and runs them.
-
-**Does Nano replace AI models?**
-No — it changes *when* they run. Models author behavior and handle novel situations; compiled
-graphs handle everything repeatable. Inference becomes the exception, not the default.
-
-**Can Nano run without an LLM?**
-Yes. Compiled programs execute deterministically with no model in the loop. You can write
-`.nano` source by hand and never touch a model.
-
-**Can a Nano program place an order / call an API / act on the world?**
-No, by construction. Programs emit *intents*; a pluggable gate (your risk engine, policy
-layer, or a human) approves or rejects each one, with a recorded reason.
-
-**Is this only for trading?**
-No. Trading is the first workload because it is the most measurable one. The architecture
-targets any Observe → Decide → Act → Record loop: automation, monitoring/response, robotics.
-
-**How is this different from LangChain or LangGraph?**
-Those orchestrate live model calls; state and control flow involve the model at runtime. Nano
-compiles behavior *ahead of time* into a replayable IR — the model is never the router. See
-[Paper 01](docs/papers/01-why-nano.md) for the full landscape comparison.
-
-**Is it production-ready?**
-It is a research preview with 173 passing tests. The core (IR, compiler, interpreter, bridge)
-is real and tested; the CLI and several typing features are still design. The
-[status table](#status--whats-real) is kept honest.
-
-## The paper series
-
-Seventeen short papers, each answering one question — **[docs/papers/](docs/papers/README.md)**.
-Start with these four; they carry the whole thesis:
-[Why Nano](docs/papers/01-why-nano.md) → [The Agentic Compiler](docs/papers/02-the-agentic-compiler.md)
-→ [Determinism](docs/papers/03-determinism.md) → [Provenance](docs/papers/04-provenance.md).
-
-| Papers | Theme |
-|---|---|
-| [Why Nano](docs/papers/01-why-nano.md) · [The Agentic Compiler](docs/papers/02-the-agentic-compiler.md) · [Determinism](docs/papers/03-determinism.md) · [Provenance](docs/papers/04-provenance.md) | the core thesis |
-| [Why Not Go](docs/papers/05-why-not-go.md) · [Why Not TypeScript](docs/papers/06-why-not-typescript.md) · [Nano vs. Pine](docs/papers/07-nano-vs-pine.md) | positioning |
-| [LLM Integration](docs/papers/08-llm-integration.md) · [Autonomous Systems](docs/papers/09-autonomous-systems.md) · [The Nano Family](docs/papers/10-nano-family.md) | scope |
-| [Performance](docs/papers/11-performance.md) · [Security](docs/papers/12-security.md) · [Design Principles](docs/papers/13-design-principles.md) · [Future Work](docs/papers/14-future-work.md) | engineering |
-| [Closed-Loop Engineering](docs/papers/15-closed-loop-engineering.md) · [Quantum Computing](docs/papers/16-quantum-computing.md) · [Heterogeneous Compute](docs/papers/17-heterogeneous-compute.md) | the horizon |
-
-## Status — what's real
-
-| Shipped (tested) | Design / roadmap / research |
-|---|---|
-| Nano IR (`nano/ir/`) | CLI (`nano compile` / `replay` / `visualize`) |
-| Reference interpreter (`nano/runtime/`) | `Series<T>` look-ahead typing |
-| `.nano` → IR compiler (`nano/compiler/`) | Nano+ adaptive layer (memory, multi-agent) |
-| Risk-gate bridge + backtester (`nano/bridge/`) | Real quantum-hardware dispatch |
-| Editor services (`nano/aethercode/`) | Cognitive execution / confidence routing |
-| Pattern cache (`nano/memory/`) + optimization loop (`nano/loop/`) | |
-| Conformance corpus (`nano/examples/`) + strategy library (`nano/library/`) | |
-
-Every claim in the docs cites shipped code or is explicitly labeled design, roadmap, or
-research.
-
-## Contributing
-
-Contributions are welcome — the [strategy library](nano/library/README.md) is the easiest
-entry point (add a classic strategy as `.nano` source + expected IR), and
-[CONTRIBUTING.md](CONTRIBUTING.md) covers setup, tests, and where help is most valuable.
-Security reports: see [SECURITY.md](SECURITY.md).
+Each pair is compiled, round-tripped through `StrategyGraph`, and replayed in the test suite. The corpus demonstrates syntax and deterministic behavior; it is not a strategy registry, a performance guarantee, or production trading advice.
 
 ## Documentation
 
-| Document | Contents |
-|---|---|
-| [Paper Series](docs/papers/README.md) | 17 papers — one question each |
-| [Build Order](BUILD_ORDER.md) | IR-first build sequence, the intent/gate lock, milestone status |
-| [Strategy Library](nano/library/README.md) | Pine-inspired quant strategy corpus + contribution guide |
-| [Optimization Loop](docs/nano-optimization-loop.md) | Nano++ autonomous optimization loop overview |
-| [Contributing](CONTRIBUTING.md) | Dev setup, test workflow, contribution areas |
-| [Security Policy](SECURITY.md) | Reporting, threat model, what determinism does and doesn't protect |
+| Need | Start here |
+| --- | --- |
+| Exact grammar and runtime semantics | [Language reference](docs/language.md) |
+| Module boundaries and data flow | [Architecture](docs/architecture.md) |
+| Implemented vs. experimental vs. planned work | [Status](docs/status.md) |
+| Strategy-corpus conventions | [Strategy corpus](nano/library/README.md) |
+| Integration and contribution setup | [Contributing](CONTRIBUTING.md) |
+| Security boundaries and reporting | [Security policy](SECURITY.md) |
+| Design essays and research directions | [Paper series](docs/papers/README.md) |
 
----
+The paper series records design arguments and research directions; it is not the API specification. When a paper and the reference documentation differ, the source and tests define current behavior.
 
-<div align="center">
+## Contributing
 
-**Nano is part of the [Aether](https://aethersystems.net) ecosystem** — autonomous AI, quantitative
-trading, and cryptographic execution provenance. Built by **Aether AI LLC**.
-
-[Website](https://aethersystems.net) · [Aether Code (web IDE)](https://app.aethersystems.net/code) · [Papers](docs/papers/README.md) · [Strategy Library](nano/library/README.md)
-
-<sub>If Nano's ideas resonate, a ⭐ helps others find it.</sub>
-
-</div>
-
-<sub>*Naming is under trademark review; the language codename and `.nano` extension are stable for
-development.*</sub>
+Nano is most useful when its compact contract stays explicit. Contributions should preserve deterministic reference execution, the intent/gate boundary, conformance coverage, and clear implemented-versus-planned labeling. See [CONTRIBUTING.md](CONTRIBUTING.md) for setup and contribution paths.
